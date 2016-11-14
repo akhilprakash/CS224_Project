@@ -42,3 +42,18 @@ class Evaluation(object):
     		Nodes.Add(nodeId)
 		return snap.getModularity(network.userArticleGraph, Nodes)
 
+	def betweeness(network):
+
+		Nodes = snap.TIntFltH()
+		Edges = snap.TIntPrFltH()
+		snap.GetBetweennessCentr(network.userArticleGraph, Nodes, Edges, 1.0)
+		for node in Nodes:
+    		print "node: %d centrality: %f" % (node, Nodes[node])
+		# for edge in Edges:
+  #   		print "edge: (%d, %d) centrality: %f" % (edge.GetVal1(), edge.GetVal2(), Edges[edge])
+
+		betweenessCentr = []
+		for edge in Edges:
+			betweenessCentr.append((edge, Edges[edge]))
+
+		return betweenessCentr
