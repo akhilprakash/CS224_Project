@@ -4,12 +4,13 @@ from network import Network
 from articleGenerator import ArticleGenerator
 from reccomendation import Recommendation
 from evaluation import Evaluation
+import pdb
 
 class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 100
+    NUM_SIMULATIONS = 5000
 
     def __init__(self):
         self.articleGenerators = []
@@ -20,6 +21,11 @@ class Experiment(object):
         self.recommendation = Recommendation()
         self.distributionResults = []
         self.pathResults = []
+        self.userDegreeDistribution = []
+        self.articleDegreeDistribution = []
+        self.aliveArticleDegreeDistribution = []
+        self.deadArticleDegreeDistribution = []
+        self.lifeTimeDistribution = []
 
     def createArticle(self):
         idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
@@ -29,8 +35,10 @@ class Experiment(object):
     def PLike(self, reader, article):
         return .5
 
-    def simulate(self):
+    def simulate(self, iterations):
         article = self.createArticle()
+        #pdb.set_trace()
+        article.incrementTimeToLive(iterations)
         readers = self.network.getNextReaders()
         self.network.addArticle(article)
         for reader in readers:
@@ -48,10 +56,25 @@ class Experiment(object):
 
         self.distributionResults.append(Evaluation().getDistribution(self.network))
         self.pathResults.append(Evaluation().pathsBetween2Polticalnesses(self.network))
+        self.userDegreeDistribution.append(Evaluation().getUserDegreeDistribution(self.network))
+        self.articleDegreeDistribution.append(Evaluation().getArticleDegreeDistribution(self.network, "all"))
+        self.aliveArticleDegreeDistribution.append(Evaluation().getArticleDegreeDistribution(self.network, "alive"))
+        self.deadArticleDegreeDistribution.append(Evaluation().getArticleDegreeDistribution(self.network, "dead"))
+        self.lifeTimeDistribution.append(Evaluation().getDistributionOfLifeTime(self.network, iterations))
+
+    def killArticles(self, iterations):
+        for article in self.network.articleList:
+            #print article
+            if article.getTimeToLive < iterations:
+                article.setIsDead(True)
+                print "killed article Id = " + str(article.GetArticleId())
     
     def runAllSimulation(self):
         for i in range(0, self.NUM_SIMULATIONS):
-            self.simulate()
+            self.simulate(i)
+            self.killArticles(i)
+            #print self.deadArticleDegreeDistribution
+            #print self.lifeTimeDistribution
             print i
         print self.distributionResults
 

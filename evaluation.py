@@ -59,3 +59,27 @@ class Evaluation(object):
 			betweenessCentr.append((edge, Edges[edge]))
 
 		return betweenessCentr
+
+	def getUserDegreeDistribution(self, network):
+		userArticleGraph = network.userArticleGraph
+		degree = []
+		for user in network.userList:
+			uId = user.getUserId()
+			degree.append(userArticleGraph.GetNI(uId).GetOutDeg())
+		return degree
+
+	def getArticleDegreeDistribution(self, network, str):
+		userArticleGraph = network.userArticleGraph
+		degree = []
+		for article in network.articleList:
+			aId = article.getArticleId()
+			if str == "all" or (str == "alive" and not article.getIsDead()) or (str == "dead" and article.getIsDead()):
+				degree.append(userArticleGraph.GetNI(aId).GetOutDeg())
+		return degree
+
+	def getDistributionOfLifeTime(self, network, iterations):
+		lifeTime = []
+		for article in network.articleList:
+			if not article.getIsDead():
+				lifeTime.append(article.getTimeToLive() - iterations)
+		return lifeTime
