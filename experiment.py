@@ -65,9 +65,9 @@ class Experiment(object):
     def killArticles(self, iterations):
         for article in self.network.articleList:
             #print article
-            if article.getTimeToLive < iterations:
+            if article.getTimeToLive() < iterations:
                 article.setIsDead(True)
-                print "killed article Id = " + str(article.GetArticleId())
+                print "killed article Id = " + str(article.getArticleId())
     
     def runAllSimulation(self):
         for i in range(0, self.NUM_SIMULATIONS):
