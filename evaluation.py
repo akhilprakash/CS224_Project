@@ -1,6 +1,6 @@
 import snap
 import network
-
+import random
 
 class Evaluation(object):
 
@@ -29,12 +29,13 @@ class Evaluation(object):
 		userArticleGraph = network.userArticleGraph
 		negativeTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness1)
 		posTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness2)
-
+		negativeTwo = random.sample(negativeTwo, 10)
+		posTwo = random.sample(posTwo, 10)
 		distance = []
-		# for user1 in negativeTwo:
-		# 	for user2 in posTwo:
+		for user1 in negativeTwo:
+		 	for user2 in posTwo:
 		# 		#figure out why this is not working
-		# 		#distance.append(GetShortPath(userArticleGraph, user1, user2))
+		 		distance.append(snap.GetShortPath(userArticleGraph, user1, user2))
 		# 		x = 1
 		return self.mean(distance)
 

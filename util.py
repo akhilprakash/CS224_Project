@@ -1,4 +1,5 @@
 import random
+import csv
 
 def generatePoliticalness(weights):
     	rand = random.random()
@@ -12,3 +13,11 @@ def generatePoliticalness(weights):
     		cumsum = cumsum + weights[i]
     	#should not reach here
     	raise Exception("Should not reach here")
+
+
+def writeCSV(fileName, value):
+    with open(fileName + '.csv', 'wb') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=' ',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for i in range(0, len(value)):
+            spamwriter.writerow([value[i]])

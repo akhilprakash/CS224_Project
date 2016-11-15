@@ -33,9 +33,25 @@ class Experiment(object):
         return articleGen.createArticle()
 
     def PLike(self, reader, article):
-        diff = abs(reader.getPolticalness() - article.getPoliticalness())
-        diffToProb = {0:.6, 1:.2, 2:.2}
+        diff = abs(reader.getPoliticalness() - article.getPoliticalness())
+        diffToProb = {0:.4, 1:.2, 2:.2, 3:.1, 4:.1}
         return diffToProb[diff]
+
+    def randomRandomCompleteTriangles(self, iterations):
+        article = self.createArticle()
+        article.incrementTimeToLive(iterations)
+        self.network.addArticle(article)
+        randReaders = random.sample(self.network.userList,1)
+        for reader in randReaders:
+            probLike = self.PLike(reader, article)
+            rand = random.random()
+            if rand < probLike:
+                self.network.addEdge(reader, article)
+                neighbors = self.network.getOutEdges(reader.getUserId())
+                rand = random.sample(neighbors, 1)
+                for r in rand:
+                    self.network.addEdge(r, article)
+        self.runAnalysis()
 
     def simulate(self, iterations):
         article = self.createArticle()
@@ -53,9 +69,9 @@ class Experiment(object):
                 self.network.addEdge(reader, article)
 
         if iterations % 3 == 0:
-            articleDeg = Evaluation().getArticleDegreeDistribution(network, "alive")
-            sorted(articleDeg, lambda x: x[1], reverse = True)
-            topFive = articleDeg[0:5]
+            articleDeg = Evaluation().getArticleDegreeDistribution(self.network, "alive")
+            sortedDeg = sorted(articleDeg, key = lambda x: x[1], reverse = True)
+            topFive = sortedDeg[0:5]
             for (aId, _) in topFive:
                 article = self.network.getArticle(aId)
                 for reader in readers:
@@ -64,11 +80,13 @@ class Experiment(object):
                     if rand < probLike:
                         self.network.addEdge(reader, article)
 
+        self.runAnalysis(iterations)
 
     	#recommend to readers
     	#see if readers like
     	#if it does add edge
 
+    def runAnalysis(self, iterations):
         self.distributionResults.append(Evaluation().getDistribution(self.network))
         self.pathResults.append(Evaluation().pathsBetween2Polticalnesses(self.network))
         self.userDegreeDistribution.append(Evaluation().getUserDegreeDistribution(self.network))
