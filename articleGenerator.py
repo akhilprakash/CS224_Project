@@ -2,18 +2,16 @@ import util
 
 class ArticleGenerator(object):
 
-	def __init__(self, source, distribution):
-    	self.source = source
-    	self.distribution = distribution
+    def __init__(self, source, distribution):
+        self.source = source
+        self.distribution = distribution
 
     def getSource(self):
-    	return self.source
+        return self.source
 
     def createArticle(self):
-    	indexToPoliticalness = {0: -2, 1: -1, 2:0, 3:1, 4:2}
-    	index = util.generatePoliticalness(distribution)
-    	polticalness = indexToPoliticalness[index]
-    	#somehow figure out ids
-    	return Article(self.source, polticalness)
-
-
+        indexToPoliticalness = {0: -2, 1: -1, 2:0, 3:1, 4:2}
+        index = util.generatePoliticalness(distribution)
+        polticalness = indexToPoliticalness[index]
+        #somehow figure out ids
+        return Article(self.source, polticalness)

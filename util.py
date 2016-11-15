@@ -1,6 +1,6 @@
 import random
 
-def generatePoliticalness(self, weights = POLITICALNESS_DISTRIBUTION_FOR_USERS):
+def generatePoliticalness(self, weights):
     	rand = random.random()
     	summation = sum(weights)
     	for i in range(0, len(weights)):

@@ -23,7 +23,7 @@ class Evaluation(object):
 		return distribution
 
 	def mean(numbers):
-    	return float(sum(numbers)) / max(len(numbers), 1)
+		return float(sum(numbers)) / max(len(numbers), 1)
 
 	def pathsBetween2Polticalnesses(network, polticalness1=-2, polticalness2=2):
 		userArticleGraph = network.userArticleGraph
@@ -39,7 +39,7 @@ class Evaluation(object):
 	def modularity(network):
 		Nodes = snap.TIntV()
 		for nodeId in network.userArticleGraph.Nodes():
-    		Nodes.Add(nodeId)
+			Nodes.Add(nodeId)
 		return snap.getModularity(network.userArticleGraph, Nodes)
 
 	def betweeness(network):
@@ -48,7 +48,7 @@ class Evaluation(object):
 		Edges = snap.TIntPrFltH()
 		snap.GetBetweennessCentr(network.userArticleGraph, Nodes, Edges, 1.0)
 		for node in Nodes:
-    		print "node: %d centrality: %f" % (node, Nodes[node])
+			print "node: %d centrality: %f" % (node, Nodes[node])
 		# for edge in Edges:
   #   		print "edge: (%d, %d) centrality: %f" % (edge.GetVal1(), edge.GetVal2(), Edges[edge])
 

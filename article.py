@@ -2,22 +2,22 @@ import random
 
 class Article(object):
 
-	AVERAGE_TIME_TO_LIVE = 100
+    AVERAGE_TIME_TO_LIVE = 100
 
     def __init__(self, source, politicalness, articleId=None):
-    	self.source = source
-    	self.politicalness = politicalness
-    	self.timeToLive = random.expovariate(AVERAGE_TIME_TO_LIVE)
+        self.source = source
+        self.politicalness = politicalness
+        self.timeToLive = random.expovariate(AVERAGE_TIME_TO_LIVE)
         self.articleId = articleId
 
     def getSource(self):
-    	return self.source
+        return self.source
 
     def getPolticalness(self):
-    	return self.politicalness
+        return self.politicalness
 
     def getTimeToLife(self):
-    	return self.timeToLive
+        return self.timeToLive
 
     def getArticleId(self):
         return self.articleId
