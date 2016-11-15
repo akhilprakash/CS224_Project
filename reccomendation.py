@@ -1,4 +1,4 @@
 class Recommendation(object):
 
-	def makeRecommendation(network, reader):
+	def makeRecommendation(self, network, reader):
 		return None

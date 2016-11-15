@@ -1,6 +1,6 @@
 import random
 
-def generatePoliticalness(self, weights):
+def generatePoliticalness(weights):
     	rand = random.random()
     	summation = sum(weights)
     	for i in range(0, len(weights)):

@@ -4,13 +4,13 @@ import network
 
 class Evaluation(object):
 
-	def getDistribution(network):
+	def getDistribution(self, network):
 		userArticleGraph = network.userArticleGraph
 		distribution = {}
 		for user in network.userList:
 			nodeUserId = user.getUserId()
-			userPolticalness = user.getUserPolticalness()
-			for article in nodeUserId.GetOutEdges():
+			userPolticalness = user.getPoliticalness()
+			for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
 				articlePoliticalness = network.getArticlePolticalness(article)
 				if userPolticalness in distribution:
 					innerDict = distribution[userPolticalness]
@@ -22,27 +22,29 @@ class Evaluation(object):
 					distribution[userPolticalness] = {articlePoliticalness : 1}
 		return distribution
 
-	def mean(numbers):
+	def mean(self, numbers):
 		return float(sum(numbers)) / max(len(numbers), 1)
 
-	def pathsBetween2Polticalnesses(network, polticalness1=-2, polticalness2=2):
+	def pathsBetween2Polticalnesses(self, network, polticalness1=-2, polticalness2=2):
 		userArticleGraph = network.userArticleGraph
 		negativeTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness1)
 		posTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness2)
 
 		distance = []
-		for user1 in negativeTwo:
-			for user2 in posTwo:
-				distance.append(snap.GetShortestPath(userArticleGraph, user1, user2))
-		return mean(distance)
+		# for user1 in negativeTwo:
+		# 	for user2 in posTwo:
+		# 		#figure out why this is not working
+		# 		#distance.append(GetShortPath(userArticleGraph, user1, user2))
+		# 		x = 1
+		return self.mean(distance)
 
-	def modularity(network):
+	def modularity(self, network):
 		Nodes = snap.TIntV()
 		for nodeId in network.userArticleGraph.Nodes():
 			Nodes.Add(nodeId)
 		return snap.getModularity(network.userArticleGraph, Nodes)
 
-	def betweeness(network):
+	def betweeness(self, network):
 
 		Nodes = snap.TIntFltH()
 		Edges = snap.TIntPrFltH()
