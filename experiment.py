@@ -10,7 +10,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 5000
+    NUM_SIMULATIONS = 100
 
     def __init__(self):
         self.articleGenerators = []
@@ -33,7 +33,9 @@ class Experiment(object):
         return articleGen.createArticle()
 
     def PLike(self, reader, article):
-        return .5
+        diff = abs(reader.getPolticalness() - article.getPoliticalness())
+        diffToProb = {0:.6, 1:.2, 2:.2}
+        return diffToProb[diff]
 
     def simulate(self, iterations):
         article = self.createArticle()
@@ -50,6 +52,19 @@ class Experiment(object):
             if rand < probLike:
                 self.network.addEdge(reader, article)
 
+        if iterations % 3 == 0:
+            articleDeg = Evaluation().getArticleDegreeDistribution(network, "alive")
+            sorted(articleDeg, lambda x: x[1], reverse = True)
+            topFive = articleDeg[0:5]
+            for (aId, _) in topFive:
+                article = self.network.getArticle(aId)
+                for reader in readers:
+                    probLike = self.PLike(reader, article)
+                    rand = random.random()
+                    if rand < probLike:
+                        self.network.addEdge(reader, article)
+
+
     	#recommend to readers
     	#see if readers like
     	#if it does add edge
@@ -65,7 +80,7 @@ class Experiment(object):
     def killArticles(self, iterations):
         for article in self.network.articleList:
             #print article
-            if article.getTimeToLive() < iterations:
+            if not(article.getIsDead) and article.getTimeToLive() < iterations:
                 article.setIsDead(True)
                 print "killed article Id = " + str(article.getArticleId())
     

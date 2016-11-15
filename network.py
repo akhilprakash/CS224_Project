@@ -45,9 +45,12 @@ class Network(object):
         self.userArticleGraph.AddNode(user.getUserId())
 
     def getArticlePolticalness(self, articleId):
+        return self.getArticle(articleId).getArticlePolticalness()
+
+    def getArticle(self, articleId):
         for article in self.articleList:
             if article.getArticleId() == articleId:
-                return article.getPoliticalness()
+                return article
         return -1
 
     def getUserIdsWithSpecificPoltiicalness(self, polticalness):

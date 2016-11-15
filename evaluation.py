@@ -60,12 +60,13 @@ class Evaluation(object):
 
 		return betweenessCentr
 
-	def getUserDegreeDistribution(self, network):
+	def getUserDegreeDistribution(self, network, polticalness="all"):
 		userArticleGraph = network.userArticleGraph
 		degree = []
 		for user in network.userList:
 			uId = user.getUserId()
-			degree.append(userArticleGraph.GetNI(uId).GetOutDeg())
+			if polticalness == "all" or (str(user.getPoliticalness()) == polticalness):
+				degree.append(userArticleGraph.GetNI(uId).GetOutDeg())
 		return degree
 
 	def getArticleDegreeDistribution(self, network, str):
@@ -74,7 +75,7 @@ class Evaluation(object):
 		for article in network.articleList:
 			aId = article.getArticleId()
 			if str == "all" or (str == "alive" and not article.getIsDead()) or (str == "dead" and article.getIsDead()):
-				degree.append(userArticleGraph.GetNI(aId).GetOutDeg())
+				degree.append((aId, userArticleGraph.GetNI(aId).GetOutDeg()))
 		return degree
 
 	def getDistributionOfLifeTime(self, network, iterations):
@@ -83,3 +84,27 @@ class Evaluation(object):
 			if not article.getIsDead():
 				lifeTime.append(article.getTimeToLive() - iterations)
 		return lifeTime
+
+	#triangles
+	def clusterOneNode(self, node, graph):
+		degree = node.GetOutDeg()
+		if degree < 2:
+			return 0
+		neighborsOfNode = node.GetOutEdges()
+		counter = 0
+		for id in neighborsOfNode:
+			for k in node.GetOutEdges():
+				if graph.IsEdge(k, id):
+					counter = counter + 1
+		counter = counter / 2
+		return (2.0 * counter) / (degree * (degree - 1))
+
+	def clustersForUsers(self, polticalness = "all"):
+		userArticleGraph = network.userArticleGraph
+		cluster = []
+		for user in network.userList:
+			if polticalness == "all" or str(user.getPoliticalness()) == polticalness:
+				result = self.clusterOneNode(userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
+				cluster.append(result)
+		return cluster
+
