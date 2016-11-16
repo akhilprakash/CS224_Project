@@ -41,7 +41,7 @@ class Experiment(object):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
-        randReaders = random.sample(self.network.userList,1)
+        randReaders = random.sample(self.network.users, 1)
         for reader in randReaders:
             probLike = self.PLike(reader, article)
             rand = random.random()
@@ -59,8 +59,11 @@ class Experiment(object):
         article.incrementTimeToLive(iterations)
         readers = self.network.getNextReaders()
         self.network.addArticle(article)
+
         for reader in readers:
-            rec = self.recommendation.makeRecommendation(self.network, reader)
+            rec = self.recommendation.makeRecommendations(self.network, reader)
+            # TODO: do something
+
 
         for reader in readers:
             probLike = self.PLike(reader, article)
@@ -96,7 +99,7 @@ class Experiment(object):
         self.lifeTimeDistribution.append(Evaluation().getDistributionOfLifeTime(self.network, iterations))
 
     def killArticles(self, iterations):
-        for article in self.network.articleList:
+        for article in self.network.articles:
             #print article
             if not(article.getIsDead) and article.getTimeToLive() < iterations:
                 article.setIsDead(True)

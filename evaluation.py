@@ -27,8 +27,8 @@ class Evaluation(object):
 
 	def pathsBetween2Polticalnesses(self, network, polticalness1=-2, polticalness2=2):
 		userArticleGraph = network.userArticleGraph
-		negativeTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness1)
-		posTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness2)
+		negativeTwo = network.getUserIdsWithSpecificPoliticalness(polticalness1)
+		posTwo = network.getUserIdsWithSpecificPoliticalness(polticalness2)
 		negativeTwo = random.sample(negativeTwo, 10)
 		posTwo = random.sample(posTwo, 10)
 		distance = []
