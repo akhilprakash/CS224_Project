@@ -3,6 +3,7 @@ import random
 import csv
 import sys
 import time
+import os
 
 
 def generatePoliticalness(weights):
@@ -67,3 +68,17 @@ def visual_xrange(stop, **kwargs):
             progress.update(i+1)
 
 
+def print_error(s):
+    print >>sys.stderr, s
+
+
+def data_path(filename):
+    return os.path.join('data', filename)
+
+
+def out_path(filename):
+    if not os.path.exists('out'):
+        print_error('Created `out` directory for result files.')
+        os.mkdir('out')
+
+    return os.path.join('out', filename)

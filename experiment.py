@@ -4,6 +4,7 @@ from network import Network
 from articleGenerator import ArticleGenerator
 from recommendation import RandomRecommender
 from evaluation import Evaluation
+from util import print_error, data_path, out_path
 import pdb
 
 class Experiment(object):
@@ -112,6 +113,17 @@ class Experiment(object):
             #print self.deadArticleDegreeDistribution
             #print self.lifeTimeDistribution
         print self.distributionResults
+
+    def savePlots(self):
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            print_error("matplotlib not available, skipping plots")
+            return
+
+        plt.figure()
+        plt.plot(self.pathResults)
+        plt.savefig(out_path('paths.png'))
 
 
 if __name__ == "__main__":
