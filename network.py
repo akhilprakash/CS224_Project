@@ -4,6 +4,7 @@ import scipy.special
 import util
 from user import User
 import random
+import os
 
 
 class Network(object):
@@ -23,7 +24,7 @@ class Network(object):
     def __init__(self):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, "stackoverflow-Java.txt", 0, 1)
+        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java.txt"), 0, 1)
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
         self.initializeUsers()
