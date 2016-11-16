@@ -10,7 +10,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 100
+    NUM_SIMULATIONS = 1000
 
     def __init__(self):
         self.articleGenerators = []
@@ -106,13 +106,11 @@ class Experiment(object):
             #print article
             if not article.getIsDead() and article.getTimeToLive() < iterations:
                 article.setIsDead(True)
-                print "killed article Id = " + str(article.getArticleId())
     
     def runAllSimulation(self):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
             self.simulate(i)
             self.killArticles(i)
-            print i
         util.writeCSV("userDegree", self.userDegreeDistribution)
         util.writeCSV("articleDegree", self.articleDegreeDistribution)
         util.writeCSV("deadArticle", self.deadArticleDegreeDistribution)

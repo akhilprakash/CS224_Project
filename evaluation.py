@@ -1,6 +1,6 @@
 import snap
 import network
-
+import random
 
 class Evaluation(object):
     def getDistribution(self, network):
@@ -35,10 +35,8 @@ class Evaluation(object):
         distance = []
         for user1 in negativeTwo:
             for user2 in posTwo:
-                # 		#figure out why this is not working
                 distance.append(
                     snap.GetShortPath(userArticleGraph, user1, user2))
-        # x = 1
         return self.mean(distance)
 
     def modularity(self, network):
@@ -112,4 +110,4 @@ class Evaluation(object):
                 result = self.clusterOneNode(
                     userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
                 cluster.append(result)
-        return cluster
+        return self.mean(cluster)
