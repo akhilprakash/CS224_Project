@@ -113,7 +113,6 @@ class Experiment(object):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
             self.simulate(i)
             self.killArticles(i)
-            print i
         util.writeCSV("userDegree", self.userDegreeDistribution)
         util.writeCSV("articleDegree", self.articleDegreeDistribution)
         util.writeCSV("deadArticle", self.deadArticleDegreeDistribution)

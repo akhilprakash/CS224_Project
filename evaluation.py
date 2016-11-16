@@ -1,5 +1,6 @@
 import snap
 import network
+import random
 
 
 class Evaluation(object):
