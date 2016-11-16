@@ -5,6 +5,7 @@ from articleGenerator import ArticleGenerator
 from recommendation import RandomRecommender
 import evaluation
 from util import print_error, data_path, out_path
+from collections import defaultdict
 import pdb
 
 class Experiment(object):
@@ -27,6 +28,16 @@ class Experiment(object):
         self.aliveArticleDegreeDistribution = []
         self.deadArticleDegreeDistribution = []
         self.lifeTimeDistribution = []
+        self.metrics = [
+            evaluation.ReadingDistribution(),
+            evaluation.PathsBetweenPoliticalnesses(),
+            evaluation.UserDegreeDistribution(),
+            evaluation.ArticleDegreeDistribution("all"),
+            evaluation.ArticleDegreeDistribution("alive"),
+            evaluation.ArticleDegreeDistribution("dead"),
+            evaluation.DistributionOfLifeTime(),
+        ]
+        self.histories = defaultdict(list)
 
     def createArticle(self):
         idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
@@ -76,8 +87,8 @@ class Experiment(object):
                 self.network.addEdge(reader, article)
 
         if iterations % 3 == 0:
-            articleDeg = evaluation.getArticleDegreeDistribution(self.network, "alive")
-            sortedDeg = sorted(articleDeg, key = lambda x: x[1], reverse = True)
+            articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
+            sortedDeg = sorted(articleDeg, key=lambda x: x[1], reverse=True)
             topFive = sortedDeg[0:5]
             for (aId, _) in topFive:
                 article = self.network.getArticle(aId)
@@ -89,18 +100,9 @@ class Experiment(object):
 
         self.runAnalysis(iterations)
 
-
     def runAnalysis(self, iterations):
-        self.distributionResults.append(evaluation.getDistribution(self.network))
-        self.pathResults.append(evaluation.pathsBetween2Polticalnesses(self.network))
-        self.userDegreeDistribution.append(evaluation.getUserDegreeDistribution(self.network))
-        articleDegree = evaluation.getArticleDegreeDistribution(self.network, "all")
-        self.articleDegreeDistribution.append(map(lambda x: x[1], articleDegree))
-        alive = evaluation.getArticleDegreeDistribution(self.network, "alive")
-        self.aliveArticleDegreeDistribution.append(map(lambda x: x[1], alive))
-        dead = evaluation.getArticleDegreeDistribution(self.network, "dead")
-        self.deadArticleDegreeDistribution.append(map(lambda x: x[1], dead))
-        self.lifeTimeDistribution.append(evaluation.getDistributionOfLifeTime(self.network, iterations))
+        for metric in self.metrics:
+            self.histories[metric].append(metric.measure(self.network, iterations))
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
@@ -113,24 +115,23 @@ class Experiment(object):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
             self.simulate(i)
             self.killArticles(i)
-        util.writeCSV(out_path("userDegree"), self.userDegreeDistribution)
-        util.writeCSV(out_path("articleDegree"), self.articleDegreeDistribution)
-        util.writeCSV(out_path("deadArticle"), self.deadArticleDegreeDistribution)
         #print self.distributionResults
 
-    def savePlots(self):
+    def saveResults(self):
+        # Save results
+        for metric in self.metrics:
+            metric.save(self.histories[metric])
+
+        # Try to plot
         try:
             import matplotlib.pyplot as plt
         except ImportError:
             print_error("matplotlib not available, skipping plots")
-            return
 
-        plt.figure()
-        plt.plot(self.pathResults)
-        plt.savefig(out_path('paths.png'))
-
+        for metric in self.metrics:
+            metric.plot(self.histories[metric])
 
 if __name__ == "__main__":
     exp = Experiment()
     exp.runAllSimulation()
-    exp.savePlots()
+    exp.saveResults()
