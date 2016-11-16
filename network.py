@@ -24,7 +24,7 @@ class Network(object):
     def __init__(self):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java.txt"), 0, 1)
+        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
         self.initializeUsers()
