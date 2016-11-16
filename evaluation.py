@@ -1,6 +1,5 @@
 import snap
 import network
-import random
 
 class Evaluation(object):
 
@@ -29,8 +28,8 @@ class Evaluation(object):
 		userArticleGraph = network.userArticleGraph
 		negativeTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness1)
 		posTwo = network.getUserIdsWithSpecificPoltiicalness(polticalness2)
-		negativeTwo = random.sample(negativeTwo, 10)
-		posTwo = random.sample(posTwo, 10)
+		#negativeTwo = random.sample(negativeTwo, 10)
+		#posTwo = random.sample(posTwo, 10)
 		distance = []
 		for user1 in negativeTwo:
 		 	for user2 in posTwo:

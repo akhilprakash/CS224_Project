@@ -2,11 +2,11 @@ import random
 
 class User(object):
 
-	AVERAGE_TIME_TO_LIVE = 100
+	READING_RATE = 1.0/100
 
 	def __init__(self, politicalness, counter):
 		self.politicalness = politicalness
-		self.readingRate = random.expovariate(self.AVERAGE_TIME_TO_LIVE)
+		self.readingRate = random.expovariate(self.READING_RATE)
 		self.userId = counter
 
 	def getPoliticalness(self):
