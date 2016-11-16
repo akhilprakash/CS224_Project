@@ -3,7 +3,7 @@ import random
 from network import Network
 from articleGenerator import ArticleGenerator
 from recommendation import RandomRecommender
-from evaluation import Evaluation
+import evaluation
 from util import print_error, data_path, out_path
 import pdb
 
@@ -64,6 +64,9 @@ class Experiment(object):
         for reader in readers:
             rec = self.recommender.makeRecommendations(self.network, reader)
             # TODO: do something
+            #recommend to readers
+            #see if readers like
+            #if it does add edge
 
 
         for reader in readers:
@@ -73,7 +76,7 @@ class Experiment(object):
                 self.network.addEdge(reader, article)
 
         if iterations % 3 == 0:
-            articleDeg = Evaluation().getArticleDegreeDistribution(self.network, "alive")
+            articleDeg = evaluation.getArticleDegreeDistribution(self.network, "alive")
             sortedDeg = sorted(articleDeg, key = lambda x: x[1], reverse = True)
             topFive = sortedDeg[0:5]
             for (aId, _) in topFive:
@@ -86,21 +89,18 @@ class Experiment(object):
 
         self.runAnalysis(iterations)
 
-    	#recommend to readers
-    	#see if readers like
-    	#if it does add edge
 
     def runAnalysis(self, iterations):
-        self.distributionResults.append(Evaluation().getDistribution(self.network))
-        self.pathResults.append(Evaluation().pathsBetween2Polticalnesses(self.network))
-        self.userDegreeDistribution.append(Evaluation().getUserDegreeDistribution(self.network))
-        articleDegree = Evaluation().getArticleDegreeDistribution(self.network, "all")
+        self.distributionResults.append(evaluation.getDistribution(self.network))
+        self.pathResults.append(evaluation.pathsBetween2Polticalnesses(self.network))
+        self.userDegreeDistribution.append(evaluation.getUserDegreeDistribution(self.network))
+        articleDegree = evaluation.getArticleDegreeDistribution(self.network, "all")
         self.articleDegreeDistribution.append(map(lambda x: x[1], articleDegree))
-        alive = Evaluation().getArticleDegreeDistribution(self.network, "alive")
+        alive = evaluation.getArticleDegreeDistribution(self.network, "alive")
         self.aliveArticleDegreeDistribution.append(map(lambda x: x[1], alive))
-        dead = Evaluation().getArticleDegreeDistribution(self.network, "dead")
+        dead = evaluation.getArticleDegreeDistribution(self.network, "dead")
         self.deadArticleDegreeDistribution.append(map(lambda x: x[1], dead))
-        self.lifeTimeDistribution.append(Evaluation().getDistributionOfLifeTime(self.network, iterations))
+        self.lifeTimeDistribution.append(evaluation.getDistributionOfLifeTime(self.network, iterations))
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
