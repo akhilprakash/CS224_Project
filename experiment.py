@@ -35,7 +35,7 @@ class Experiment(object):
 
     def PLike(self, reader, article):
         diff = abs(reader.getPoliticalness() - article.getPoliticalness())
-        diffToProb = {0:.4, 1:.2, 2:.2, 3:.1, 4:.1}
+        diffToProb = {0:.6, 1:.4, 2:.2, 3:.1, 4:.1}
         return diffToProb[diff]
 
     def randomRandomCompleteTriangles(self, iterations):
@@ -94,9 +94,12 @@ class Experiment(object):
         self.distributionResults.append(Evaluation().getDistribution(self.network))
         self.pathResults.append(Evaluation().pathsBetween2Polticalnesses(self.network))
         self.userDegreeDistribution.append(Evaluation().getUserDegreeDistribution(self.network))
-        self.articleDegreeDistribution.append(Evaluation().getArticleDegreeDistribution(self.network, "all"))
-        self.aliveArticleDegreeDistribution.append(Evaluation().getArticleDegreeDistribution(self.network, "alive"))
-        self.deadArticleDegreeDistribution.append(Evaluation().getArticleDegreeDistribution(self.network, "dead"))
+        articleDegree = Evaluation().getArticleDegreeDistribution(self.network, "all")
+        self.articleDegreeDistribution.append(map(lambda x: x[1], articleDegree))
+        alive = Evaluation().getArticleDegreeDistribution(self.network, "alive")
+        self.aliveArticleDegreeDistribution.append(map(lambda x: x[1], alive))
+        dead = Evaluation().getArticleDegreeDistribution(self.network, "dead")
+        self.deadArticleDegreeDistribution.append(map(lambda x: x[1], dead))
         self.lifeTimeDistribution.append(Evaluation().getDistributionOfLifeTime(self.network, iterations))
 
     def killArticles(self, iterations):
@@ -110,9 +113,11 @@ class Experiment(object):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
             self.simulate(i)
             self.killArticles(i)
-            #print self.deadArticleDegreeDistribution
-            #print self.lifeTimeDistribution
-        print self.distributionResults
+            print i
+        util.writeCSV("userDegree", self.userDegreeDistribution)
+        util.writeCSV("articleDegree", self.articleDegreeDistribution)
+        util.writeCSV("deadArticle", self.deadArticleDegreeDistribution)
+        #print self.distributionResults
 
     def savePlots(self):
         try:

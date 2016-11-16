@@ -1,6 +1,5 @@
 import snap
 import network
-import random
 
 
 class Evaluation(object):
@@ -24,6 +23,7 @@ class Evaluation(object):
 
     def mean(self, numbers):
         return float(sum(numbers)) / max(len(numbers), 1)
+
 
     def pathsBetween2Polticalnesses(self, network, polticalness1=-2,
                                     polticalness2=2):
