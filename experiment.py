@@ -31,7 +31,8 @@ class Experiment(object):
         self.metrics = [
             evaluation.ReadingDistribution(),
             evaluation.PathsBetweenPoliticalnesses(),
-            evaluation.UserDegreeDistribution(),
+            evaluation.UserDegreeDistribution("all"),
+            evaluation.Modularity(),
             evaluation.ArticleDegreeDistribution("all"),
             evaluation.ArticleDegreeDistribution("alive"),
             evaluation.ArticleDegreeDistribution("dead"),
@@ -78,7 +79,6 @@ class Experiment(object):
             #recommend to readers
             #see if readers like
             #if it does add edge
-
 
         for reader in readers:
             probLike = self.PLike(reader, article)

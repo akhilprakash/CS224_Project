@@ -21,6 +21,11 @@ class Metric(object):
     def name(self):
         return self.__class__.__name__
 
+    @property
+    def safe_name(self):
+        params = '_'.join(['%s_%s' % (k, v) for k, v in vars(self).iteritems()])
+        return '%s_%s' % (self.name, params)
+
     def measure(self, network, iterations):
         """Given a Network, return a metric of any type."""
         raise NotImplementedError
@@ -30,13 +35,13 @@ class Metric(object):
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
         """
-        print_error("No plotter for %s" % self.name)
+        print_error("No plotter for %s" % self)
 
     def save(self, history):
         """
         Save history to a file.
         """
-        print_error("No saver for %s" % self.name)
+        print_error("No saver for %s" % self)
 
     # Helpful Stuff #
     def __hash__(self):
@@ -49,7 +54,7 @@ class Metric(object):
         return self.name == self.name and vars(self) == vars(other)
 
     def __str__(self):
-        params = ', '.join(['%s=%s' % (k, v) for k, v in vars(self)])
+        params = ', '.join(['%s=%s' % (k, v) for k, v in vars(self).iteritems()])
         return '%s(%s)' % (self.name, params)
 
     def __repr__(self):
@@ -102,15 +107,20 @@ class PathsBetweenPoliticalnesses(Metric):
     def plot(self, history):
         plt.figure()
         plt.plot(history)
-        plt.savefig(out_path(self.name))
+        plt.savefig(out_path(self.safe_name + '.png'))
 
 
 class Modularity(Metric):
     def measure(self, network, iterations):
         Nodes = snap.TIntV()
-        for nodeId in network.userArticleGraph.Nodes():
-            Nodes.Add(nodeId)
-        return snap.getModularity(network.userArticleGraph, Nodes)
+        for ni in network.userArticleGraph.Nodes():
+            Nodes.Add(ni.GetId())
+        return snap.GetModularity(network.userArticleGraph, Nodes)
+
+    def plot(self, history):
+        plt.figure()
+        plt.plot(history)
+        plt.savefig(out_path(self.safe_name + '.png'))
 
 
 class Betweenness(Metric):
@@ -144,7 +154,14 @@ class UserDegreeDistribution(Metric):
         return degree
 
     def plot(self, history):
-        util.writeCSV(out_path("userDegree"), self.history)
+        # Just plot the dist for the last iteration
+        last = history[-1]
+        plt.figure()
+        plt.hist(last)
+        plt.savefig(out_path(self.safe_name + '.png'))
+
+    def save(self, history):
+        util.writeCSV(out_path("userDegree"), history)
 
 
 def getArticleDegreeDistribution(network, article_type):
@@ -166,7 +183,7 @@ class ArticleDegreeDistribution(Metric):
     def measure(self, network, iterations):
         return map(lambda x: x[1], getArticleDegreeDistribution(network, self.article_type))
 
-    def plot(self, history):
+    def save(self, history):
         # This is for Akhil's R plots
         if self.article_type == 'all':
             util.writeCSV(out_path("articleDegree"), history)
