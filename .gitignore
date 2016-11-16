@@ -92,4 +92,4 @@ ENV/
 .idea/
 
 # Output files
-results/
+out/

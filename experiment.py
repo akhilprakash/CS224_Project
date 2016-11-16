@@ -113,9 +113,9 @@ class Experiment(object):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
             self.simulate(i)
             self.killArticles(i)
-        util.writeCSV("userDegree", self.userDegreeDistribution)
-        util.writeCSV("articleDegree", self.articleDegreeDistribution)
-        util.writeCSV("deadArticle", self.deadArticleDegreeDistribution)
+        util.writeCSV(out_path("userDegree"), self.userDegreeDistribution)
+        util.writeCSV(out_path("articleDegree"), self.articleDegreeDistribution)
+        util.writeCSV(out_path("deadArticle"), self.deadArticleDegreeDistribution)
         #print self.distributionResults
 
     def savePlots(self):
