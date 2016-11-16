@@ -129,3 +129,4 @@ class Experiment(object):
 if __name__ == "__main__":
     exp = Experiment()
     exp.runAllSimulation()
+    exp.savePlots()
