@@ -2,7 +2,7 @@ import util
 import random
 from network import Network
 from articleGenerator import ArticleGenerator
-from recommendation import Recommendation
+from recommendation import RandomRecommender
 from evaluation import Evaluation
 import pdb
 
@@ -18,7 +18,7 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
-        self.recommendation = Recommendation()
+        self.recommender = RandomRecommender()
         self.distributionResults = []
         self.pathResults = []
         self.userDegreeDistribution = []
@@ -61,7 +61,7 @@ class Experiment(object):
         self.network.addArticle(article)
 
         for reader in readers:
-            rec = self.recommendation.makeRecommendations(self.network, reader)
+            rec = self.recommender.makeRecommendations(self.network, reader)
             # TODO: do something
 
 
@@ -99,20 +99,20 @@ class Experiment(object):
         self.lifeTimeDistribution.append(Evaluation().getDistributionOfLifeTime(self.network, iterations))
 
     def killArticles(self, iterations):
-        for article in self.network.articles:
+        for article in self.network.articles.itervalues():
             #print article
-            if not(article.getIsDead) and article.getTimeToLive() < iterations:
+            if not article.getIsDead() and article.getTimeToLive() < iterations:
                 article.setIsDead(True)
                 print "killed article Id = " + str(article.getArticleId())
     
     def runAllSimulation(self):
-        for i in range(0, self.NUM_SIMULATIONS):
+        for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
             self.simulate(i)
             self.killArticles(i)
             #print self.deadArticleDegreeDistribution
             #print self.lifeTimeDistribution
-            print i
         print self.distributionResults
+
 
 if __name__ == "__main__":
     exp = Experiment()

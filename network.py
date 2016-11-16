@@ -1,6 +1,6 @@
 import snap
 import math
-import scipy
+import scipy.special
 import util
 from user import User
 import random
@@ -66,7 +66,8 @@ class Network(object):
 
     def powerLawExponentialCutoff(self, userNodeId, x):
         beta = self.getBeta(userNodeId)
-        return beta ** (1-self.ALPHA) * x ** (-self.ALPHA) * math.exp(-beta * x) / scipy.special.gammainc(1-self.ALPHA, beta * self.X_MIN)
+        return beta
+        #return beta ** (1-self.ALPHA) * x ** (-self.ALPHA) * math.exp(-beta * x) / scipy.special.gammainc(1-self.ALPHA, beta * self.X_MIN)
 
     def sampleFromPowerLawExponentialCutoff(self, userNodeId):
         # Rejection sampling
@@ -84,7 +85,7 @@ class Network(object):
 
     def getNextReaders(self):
         result = []
-        for user in self.users:
+        for user in self.users.itervalues():
             result.append((user, self.sampleFromPowerLawExponentialCutoff(user.getUserId())))
         # Want smallest values
         sortedResults = sorted(result, key=lambda x: x[1])

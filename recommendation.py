@@ -8,7 +8,8 @@ class Recommender(object):
 
 class RandomRecommender(object):
     def makeRecommendations(self, network, reader):
-        network.friendGraph.GetRndNId()
+        # FIXME: only get articles
+        return network.friendGraph.GetRndNId()
 
 
 class CollaborativeFiltering(Recommender):
