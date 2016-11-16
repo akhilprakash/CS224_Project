@@ -2,7 +2,7 @@ import util
 import random
 from network import Network
 from articleGenerator import ArticleGenerator
-from reccomendation import Recommendation
+from recommendation import Recommendation
 from evaluation import Evaluation
 import pdb
 
