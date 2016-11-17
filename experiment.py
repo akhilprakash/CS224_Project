@@ -6,6 +6,7 @@ from recommendation import RandomRecommender
 import evaluation
 from util import print_error, data_path, out_path
 from collections import defaultdict
+from itertools import izip
 import pdb
 
 class Experiment(object):
@@ -50,7 +51,13 @@ class Experiment(object):
 
     def PLike(self, reader, article):
         diff = abs(reader.getPoliticalness() - article.getPoliticalness())
-        diffToProb = {0:.6, 1:.4, 2:.2, 3:.1, 4:.1}
+        diffToProb = {
+            0: .6,
+            1: .4,
+            2: .2,
+            3: .1,
+            4: .1,
+        }
         return diffToProb[diff]
 
     def randomRandomCompleteTriangles(self, iterations):
@@ -70,25 +77,26 @@ class Experiment(object):
         self.runAnalysis()
 
     def simulate(self, iterations):
-        article = self.createArticle()
-        #pdb.set_trace()
-        article.incrementTimeToLive(iterations)
         readers = self.network.getNextReaders()
+
+        # Introduce a new article
+        article = self.createArticle()
+        article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
-
-        for reader in readers:
-            rec = self.recommender.makeRecommendations(self.network, reader)
-            # TODO: do something
-            #recommend to readers
-            #see if readers like
-            #if it does add edge
-
         for reader in readers:
             probLike = self.PLike(reader, article)
-            rand = random.random()
-            if rand < probLike:
+            if random.random() < probLike:
                 self.network.addEdge(reader, article)
 
+        # Compute recommendations and "show" them to users
+        allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
+        for readerId, recs in allRecs.iteritems():
+            reader = self.network.getUser(readerId)
+            for recommendedArticle in recs:
+                if random.random() < self.PLike(reader, recommendedArticle):
+                    self.network.addEdge(reader, recommendedArticle)
+
+        # On every third iteration, "show" the readers the top 5 most popular articles
         if iterations % 3 == 0:
             articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
             sortedDeg = sorted(articleDeg, key=lambda x: x[1], reverse=True)
@@ -97,8 +105,7 @@ class Experiment(object):
                 article = self.network.getArticle(aId)
                 for reader in readers:
                     probLike = self.PLike(reader, article)
-                    rand = random.random()
-                    if rand < probLike:
+                    if random.random() < probLike:
                         self.network.addEdge(reader, article)
 
         self.runAnalysis(iterations)
@@ -114,7 +121,7 @@ class Experiment(object):
                 article.setIsDead(True)
     
     def runAllSimulation(self):
-        for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
+        for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=False):
             self.simulate(i)
             self.killArticles(i)
         #print self.distributionResults
