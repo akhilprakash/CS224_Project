@@ -1,10 +1,14 @@
 TODO
 
-[ ] Incorporate recommendations into simulation
-[ ] Implement random recommender
-[ ] Implement popular article recommender
+[x] Incorporate recommendations into simulation
+[x] Implement random recommender
+[x] Implement popular article recommender
 [ ] Implement item-item collaborative filtering recommender
 [ ] Add requirements.txt
 [ ] Create argparser to more easily parameterize simulations
 [ ] Fix power law exponential cutoff
 [ ] Optimize rejection sampling
+[ ] Make Experiment parameterizable
+[ ] Implement data record saver (master experiment log in a CSV file, with randomly generated experiment IDs that map to the directory holding that experiments auxiliary results)
+[ ] Allow metrics to be computed at every k time steps
+[ ] Output CSVs of histories (i, metric_i)

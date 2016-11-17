@@ -1,24 +1,25 @@
 import random
 
+
 class User(object):
+    READING_RATE = 1.0 / 100
 
-	READING_RATE = 1.0/100
+    def __init__(self, politicalness, counter):
+        self.politicalness = politicalness
+        self.readingRate = random.expovariate(self.READING_RATE)
+        self.userId = counter
 
-	def __init__(self, politicalness, counter):
-		self.politicalness = politicalness
-		self.readingRate = random.expovariate(self.READING_RATE)
-		self.userId = counter
+    def getPoliticalness(self):
+        return self.politicalness
 
-	def getPoliticalness(self):
-		return self.politicalness
+    def getReadingRate(self):
+        return self.readingRate
 
-	def getReadingRate(self):
-		return self.readingRate
+    def getUserId(self):
+        return self.userId
 
-	def getUserId(self):
-		return self.userId
-
-	def __str__(self):
-		result = "(UserId = " + str(self.userId) + ", ReadingRate = " + str(self.readingRate)
-		result += ", polticalness = " + str(self.polticalness) + ")"
-		return result
+    def __str__(self):
+        result = "(UserId = " + str(self.userId) + ", ReadingRate = " + str(
+            self.readingRate)
+        result += ", polticalness = " + str(self.polticalness) + ")"
+        return result
