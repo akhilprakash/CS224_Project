@@ -38,6 +38,9 @@ class Experiment(object):
             evaluation.ArticleDegreeDistribution("alive"),
             evaluation.ArticleDegreeDistribution("dead"),
             evaluation.DistributionOfLifeTime(),
+            evaluation.AliveArticles(),
+            evaluation.DeadArticles(),
+            evaluation.OverallClustering()
         ]
         self.histories = defaultdict(list)
 
