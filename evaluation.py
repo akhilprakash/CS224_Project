@@ -201,7 +201,6 @@ class DistributionOfLifeTime(Metric):
                 lifeTime.append(article.getTimeToLive() - iterations)
         return lifeTime
 
-<<<<<<< HEAD
     # triangles
     def clusterOneNode(self, node, graph):
         degree = node.GetOutDeg()
@@ -226,7 +225,6 @@ class DistributionOfLifeTime(Metric):
                     userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
                 cluster.append(result)
         return self.mean(cluster)
-=======
 
 # triangles
 def clusterOneNode(node, graph):
