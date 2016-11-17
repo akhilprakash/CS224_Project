@@ -44,9 +44,6 @@ class Network(object):
         self.users[user.getUserId()] = user
         self.userArticleGraph.AddNode(user.getUserId())
 
-    def getArticlePolticalness(self, articleId):
-        return self.getArticle(articleId).getPoliticalness()
-
     def getArticle(self, articleId):
         return self.articles[articleId]
 
@@ -94,4 +91,10 @@ class Network(object):
         for i in range(0, self.NUMBER_OF_READERS):
             readers.append(sortedResults[i][0])
         return readers
+
+    def getRandomArticles(self, N):
+        return [self.articles[a] for a in random.sample(self.articles, N)]
+
+    def getUser(self, userId):
+        return self.users[userId]
 

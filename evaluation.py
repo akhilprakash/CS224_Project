@@ -57,7 +57,7 @@ class Metric(object):
         return self.name == self.name and vars(self) == vars(other)
 
     def __str__(self):
-        params = ', '.join(['%s=%s' % (k, v) for k, v in vars(self).iteritems()])
+        params = ', '.join(['%s=%r' % (k, v) for k, v in vars(self).iteritems()])
         return '%s(%s)' % (self.name, params)
 
     def __repr__(self):
@@ -75,7 +75,7 @@ class ReadingDistribution(Metric):
             nodeUserId = user.getUserId()
             userPolticalness = user.getPoliticalness()
             for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
-                articlePoliticalness = network.getArticlePolticalness(article)
+                articlePoliticalness = network.getArticle(article).getPoliticalness()
                 if userPolticalness in distribution:
                     innerDict = distribution[userPolticalness]
                     if articlePoliticalness in innerDict:
