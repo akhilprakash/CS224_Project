@@ -32,6 +32,9 @@ class Experiment(object):
         self.metrics = [
             evaluation.ReadingDistribution(),
             evaluation.PathsBetweenPoliticalnesses(),
+            evaluation.PathsBetweenPoliticalnesses(-1, 1),
+            evaluation.PathsBetweenPoliticalnesses(-2, -1),
+            evaluation.PathsBetweenPoliticalnesses(1, 2),
             evaluation.UserDegreeDistribution("all"),
             evaluation.Modularity(),
             evaluation.ArticleDegreeDistribution("all"),
@@ -40,7 +43,13 @@ class Experiment(object):
             evaluation.DistributionOfLifeTime(),
             evaluation.AliveArticles(),
             evaluation.DeadArticles(),
-            evaluation.OverallClustering()
+            evaluation.OverallClustering(),
+            evaluation.ClusterPolticalness("-2"),
+            evaluation.ClusterPolticalness("-1"),
+            evaluation.ClusterPolticalness("0"),
+            evaluation.ClusterPolticalness("1"),
+            evaluation.ClusterPolticalness("2"),
+            evaluation.LargestConnectedComponent()
         ]
         self.histories = defaultdict(list)
 

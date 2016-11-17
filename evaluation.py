@@ -86,6 +86,23 @@ class ReadingDistribution(Metric):
                     distribution[userPolticalness] = {articlePoliticalness: 1}
         return distribution
 
+    def plot(self, history):
+        last = history[-1]
+        for key, value in last.items():
+            #value is a dictionary
+            keys = []
+            vals = []
+            for k1, v1 in value.items():
+                keys.append(k1)
+                vals.append(v1)
+            plt.figure()
+            plt.bar(keys, vals, color = "blue")
+            plt.xlabel("Article Politicalness")
+            plt.ylabel("Frequency")
+            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            #make this a mosaic plot later
+            plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
+
 
 class PathsBetweenPoliticalnesses(Metric):
     def __init__(self, politicalness1=-2, politicalness2=2):
@@ -109,6 +126,9 @@ class PathsBetweenPoliticalnesses(Metric):
     def plot(self, history):
         plt.figure()
         plt.plot(history)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Average Distance Between Polticalness")
+        plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
         plt.savefig(out_path(self.safe_name + '.png'))
 
 class Modularity(Metric):
@@ -116,6 +136,7 @@ class Modularity(Metric):
         Nodes = snap.TIntV()
         for ni in network.userArticleGraph.Nodes():
             Nodes.Add(ni.GetId())
+        print snap.GetModularity(network.userArticleGraph, Nodes)
         return snap.GetModularity(network.userArticleGraph, Nodes)
 
     def plot(self, history):
@@ -159,6 +180,9 @@ class UserDegreeDistribution(Metric):
         last = history[-1]
         plt.figure()
         plt.hist(last)
+        plt.xlabel("User Degree")
+        plt.ylabel("Frequency")
+        plt.title("Histogram of User Degree")
         plt.savefig(out_path(self.safe_name + '.png'))
 
     def save(self, history):
@@ -219,9 +243,11 @@ class AliveArticles(Metric):
         appropriate plot of this metric over time.
         """
         numIterations = len(history)
+        plt.figure()
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
         plt.ylabel("Number of Alive Articles")
+        plt.title("Number of Alive Articles vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + '.png'))
 
     def save(self, history):
@@ -239,7 +265,11 @@ class OverallClustering(Metric):
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
         """
+        plt.figure()
         plt.plot(history)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Clustering Coefficient")
+        plt.title("Clustering Coefficient vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + '.png'))
 
     def save(self, history):
@@ -263,9 +293,11 @@ class DeadArticles(Metric):
         appropriate plot of this metric over time.
         """
         numIterations = len(history)
+        plt.figure()
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
         plt.ylabel("Number of Dead Articles")
+        plt.title("Number of Dead Articles vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + '.png'))
 
     def save(self, history):
@@ -274,28 +306,87 @@ class DeadArticles(Metric):
         """
         util.writeCSV(out_path("numberDeadArticles"), history)
 
-# triangles
-def clusterOneNode(node, graph):
-    degree = node.GetOutDeg()
-    if degree < 2:
-        return 0
-    neighborsOfNode = node.GetOutEdges()
-    counter = 0
-    for id in neighborsOfNode:
-        for k in node.GetOutEdges():
-            if graph.IsEdge(k, id):
-                counter = counter + 1
-    counter = counter / 2
-    return (2.0 * counter) / (degree * (degree - 1))
 
+class ClusterPolticalness(Metric):
 
-def clustersForUsers(network, polticalness="all"):
-    userArticleGraph = network.userArticleGraph
-    cluster = []
-    for user in network.users.itervalues():
-        if polticalness == "all" or str(
-                user.getPoliticalness()) == polticalness:
-            result = clusterOneNode(
-                userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
-            cluster.append(result)
-    return cluster
+    def __init__(self, polticalness):
+        self.polticalness = polticalness
+
+    # triangles
+    def clusterOneNode(self, node, graph):
+        degree = node.GetOutDeg()
+        if degree < 2:
+            return 0
+        neighborsOfNode = node.GetOutEdges()
+        counter = 0
+        for id in neighborsOfNode:
+            for k in node.GetOutEdges():
+                if graph.IsEdge(k, id):
+                    counter = counter + 1
+        counter = counter / 2
+        return (2.0 * counter) / (degree * (degree - 1))        
+
+    def measure(self, network, iterations):
+        userArticleGraph = network.userArticleGraph
+        cluster = []
+        for user in network.users.itervalues():
+            if self.polticalness == "all" or str(
+                    user.getPoliticalness()) == self.polticalness:
+                result = self.clusterOneNode(
+                    userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
+                cluster.append(result)
+        return cluster
+
+    def plot(self, history):
+        """
+        Given a list of objects of the type returned by self.measure, make an
+        appropriate plot of this metric over time.
+        """
+        numIterations = len(history)
+        plt.figure()
+        plt.plot(range(0, numIterations), history)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Clustering Coefficient")
+        plt.title("Clustering Coefficient for polticalness " + str(self.polticalness) + "\n vs. Number of Itertions")
+        plt.savefig(out_path(self.safe_name + "polticialness" + str(self.polticalness) + '.png'))
+
+    def save(self, history):
+        """
+        Save history to a file.
+        """
+        util.writeCSV(out_path("clusterPolticalness" + "_polticalness=" + self.polticalness), history)
+
+class LargestConnectedComponent(Metric):
+
+    def measure(self, network, iterations):
+        Components = snap.TCnComV()
+        snap.GetWccs(network.userArticleGraph, Components)
+        numComponents = []
+        for CnCom in Components:
+            numComponents.append(CnCom.Len())
+        return numComponents
+
+    def plot(self, history):
+        for i,elem in enumerate(history):
+            plt.figure()
+            plt.bar(range(len(elem)), elem)
+            plt.savefig(out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png'))
+            plt.close()
+        largestComponent = map(max, history)
+        plt.figure()
+        plt.plot(largestComponent)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Size of Largest Connected Component")
+        plt.title("Size of Largest Connected Component vs. Number of Iterations")
+        plt.savefig(out_path(self.safe_name + "largest_component" + ".png"))
+        plt.clf()
+        numComponents = map(len, history)
+        plt.figure()
+        plt.plot(numComponents)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Number of Components")
+        plt.title("Number of Components vs. Number of Iterations")
+        plt.savefig(out_path(self.safe_name + "number_components" + ".png"))
+        plt.clf()
+
+#number of common articles between users
