@@ -111,7 +111,7 @@ class Experiment(object):
                 article.setIsDead(True)
     
     def runAllSimulation(self):
-        for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=True):
+        for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=False):
             self.simulate(i)
             self.killArticles(i)
         #print self.distributionResults
