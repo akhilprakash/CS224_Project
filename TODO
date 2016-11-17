@@ -1,0 +1,8 @@
+TODO
+
+[ ] Incorporate recommendations into simulation
+[ ] Implement random recommender
+[ ] Implement popular article recommender
+[ ] Implement item-item collaborative filtering recommender
+[ ] Add requirements.txt
+[ ] Create argparser to more easily parameterize simulations
