@@ -2,8 +2,8 @@ import util
 import random
 from network import Network
 from articleGenerator import ArticleGenerator
-from recommendation import RandomRecommender
 import evaluation
+import recommendation
 from util import print_error, data_path, out_path
 from collections import defaultdict
 from itertools import izip
@@ -21,7 +21,7 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
-        self.recommender = RandomRecommender()
+        self.recommender = recommendation.PopularRecommender()
         self.distributionResults = []
         self.pathResults = []
         self.userDegreeDistribution = []

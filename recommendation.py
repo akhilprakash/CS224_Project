@@ -1,5 +1,6 @@
 """Recommendation Engines
 """
+import heapq
 
 
 class Recommender(object):
@@ -23,7 +24,10 @@ class RandomRecommender(Recommender):
 
 class PopularRecommender(Recommender):
     def makeRecommendations(self, network, readers, N=1):
-        raise NotImplementedError
+        # Every is recommended the same most popular articles
+        popular = heapq.nlargest(N, network.articles.itervalues(),
+                                 key=lambda a: network.userArticleGraph.GetNI(a.getArticleId()).GetDeg())
+        return {r.getUserId(): popular for r in readers}
 
 
 class CollaborativeFiltering(Recommender):
