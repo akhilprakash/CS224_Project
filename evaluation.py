@@ -96,13 +96,14 @@ class PathsBetweenPoliticalnesses(Metric):
         userArticleGraph = network.userArticleGraph
         negativeTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness1)
         posTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness2)
-        negativeTwo = random.sample(negativeTwo, 10)
-        posTwo = random.sample(posTwo, 10)
+        negativeTwo = random.sample(negativeTwo, min(20, len(negativeTwo)))
+        posTwo = random.sample(posTwo, min(20, len(posTwo)))
         distance = []
         for user1 in negativeTwo:
             for user2 in posTwo:
-                distance.append(
-                    snap.GetShortPath(userArticleGraph, user1, user2))
+                path = snap.GetShortPath(userArticleGraph, user1, user2)
+                if path >= 0:
+                    distance.append(path)
         return mean(distance)
 
     def plot(self, history):
@@ -201,32 +202,77 @@ class DistributionOfLifeTime(Metric):
                 lifeTime.append(article.getTimeToLive() - iterations)
         return lifeTime
 
-<<<<<<< HEAD
-    # triangles
-    def clusterOneNode(self, node, graph):
-        degree = node.GetOutDeg()
-        if degree < 2:
-            return 0
-        neighborsOfNode = node.GetOutEdges()
-        counter = 0
-        for id in neighborsOfNode:
-            for k in node.GetOutEdges():
-                if graph.IsEdge(k, id):
-                    counter = counter + 1
-        counter = counter / 2
-        return (2.0 * counter) / (degree * (degree - 1))
+class AliveArticles(Metric):
+    def measure(self, network, iterations):
+        counterAlive = 0
+        counterDead = 0
+        for article in network.articles.itervalues():
+            if not article.getIsDead():
+                counterAlive = counterAlive + 1
+            else:
+                counterDead = counterDead + 1
+        return counterAlive
 
-    def clustersForUsers(self, polticalness="all"):
-        userArticleGraph = network.userArticleGraph
-        cluster = []
-        for user in network.users.itervalues():
-            if polticalness == "all" or str(
-                    user.getPoliticalness()) == polticalness:
-                result = self.clusterOneNode(
-                    userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
-                cluster.append(result)
-        return self.mean(cluster)
-=======
+    def plot(self, history):
+        """
+        Given a list of objects of the type returned by self.measure, make an
+        appropriate plot of this metric over time.
+        """
+        numIterations = len(history)
+        plt.plot(range(0, numIterations), history)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Number of Alive Articles")
+        plt.savefig(out_path(self.safe_name + '.png'))
+
+    def save(self, history):
+        """
+        Save history to a file.
+        """
+        util.writeCSV(out_path("numberAliveArticles"), history)
+
+class OverallClustering(Metric):
+    def measure(self, network, iterations):
+        return snap.GetClustCf(network.userArticleGraph)
+
+    def plot(self, history):
+        """
+        Given a list of objects of the type returned by self.measure, make an
+        appropriate plot of this metric over time.
+        """
+        plt.plot(history)
+        plt.savefig(out_path(self.safe_name + '.png'))
+
+    def save(self, history):
+        """
+        Save history to a file.
+        """
+        util.writeCSV(out_path("OverallClustering"), history)
+
+
+class DeadArticles(Metric):
+    def measure(self, network, iterations):
+        counterDead = 0
+        for article in network.articles.itervalues():
+            if article.getIsDead():
+                counterDead = counterDead + 1
+        return counterDead
+
+    def plot(self, history):
+        """
+        Given a list of objects of the type returned by self.measure, make an
+        appropriate plot of this metric over time.
+        """
+        numIterations = len(history)
+        plt.plot(range(0, numIterations), history)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Number of Dead Articles")
+        plt.savefig(out_path(self.safe_name + '.png'))
+
+    def save(self, history):
+        """
+        Save history to a file.
+        """
+        util.writeCSV(out_path("numberDeadArticles"), history)
 
 # triangles
 def clusterOneNode(node, graph):
