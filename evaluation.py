@@ -102,6 +102,7 @@ class ReadingDistribution(Metric):
             plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
             #make this a mosaic plot later
             plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
+            plt.close()
 
 
 class PathsBetweenPoliticalnesses(Metric):
@@ -143,6 +144,7 @@ class Modularity(Metric):
         plt.figure()
         plt.plot(history)
         plt.savefig(out_path(self.safe_name + '.png'))
+        plt.close()
 
 
 class Betweenness(Metric):
@@ -184,6 +186,7 @@ class UserDegreeDistribution(Metric):
         plt.ylabel("Frequency")
         plt.title("Histogram of User Degree")
         plt.savefig(out_path(self.safe_name + '.png'))
+        plt.close()
 
     def save(self, history):
         util.writeCSV(out_path("userDegree"), history)
@@ -249,6 +252,7 @@ class AliveArticles(Metric):
         plt.ylabel("Number of Alive Articles")
         plt.title("Number of Alive Articles vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + '.png'))
+        plt.close()
 
     def save(self, history):
         """
@@ -299,6 +303,7 @@ class DeadArticles(Metric):
         plt.ylabel("Number of Dead Articles")
         plt.title("Number of Dead Articles vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + '.png'))
+        plt.close()
 
     def save(self, history):
         """
@@ -349,6 +354,7 @@ class ClusterPolticalness(Metric):
         plt.ylabel("Clustering Coefficient")
         plt.title("Clustering Coefficient for polticalness " + str(self.polticalness) + "\n vs. Number of Itertions")
         plt.savefig(out_path(self.safe_name + "polticialness" + str(self.polticalness) + '.png'))
+        plt.close()
 
     def save(self, history):
         """
@@ -380,6 +386,7 @@ class LargestConnectedComponent(Metric):
         plt.title("Size of Largest Connected Component vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + "largest_component" + ".png"))
         plt.clf()
+        plt.close()
         numComponents = map(len, history)
         plt.figure()
         plt.plot(numComponents)
@@ -388,5 +395,26 @@ class LargestConnectedComponent(Metric):
         plt.title("Number of Components vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + "number_components" + ".png"))
         plt.clf()
+        plt.close()
+
+class EigenVectors(Metric):
+
+    def measure(self, network, iterations):
+        EigvV =  snap.TFltV()
+        snap.GetEigVec(network.userArticleGraph, EigvV)
+        result = []
+        for Val in EigvV:
+            result.append(Val)
+        return sorted(result)
+
+    def plot(self, history):
+        last = history[-1]
+        plt.figure()
+        plt.plot(last)
+        plt.xlabel("Rank of Eigenvector")
+        plt.ylabel("Values of Eigenvector")
+        plt.title("First Eigenvector")
+        plt.savefig(out_path(self.safe_name + ".png"))
+        plt.close()
 
 #number of common articles between users

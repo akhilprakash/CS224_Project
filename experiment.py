@@ -35,6 +35,8 @@ class Experiment(object):
             evaluation.PathsBetweenPoliticalnesses(-1, 1),
             evaluation.PathsBetweenPoliticalnesses(-2, -1),
             evaluation.PathsBetweenPoliticalnesses(1, 2),
+            evaluation.PathsBetweenPoliticalnesses(2, 2),
+            evaluation.PathsBetweenPoliticalnesses(-2, -2),
             evaluation.UserDegreeDistribution("all"),
             evaluation.Modularity(),
             evaluation.ArticleDegreeDistribution("all"),
@@ -49,7 +51,8 @@ class Experiment(object):
             evaluation.ClusterPolticalness("0"),
             evaluation.ClusterPolticalness("1"),
             evaluation.ClusterPolticalness("2"),
-            evaluation.LargestConnectedComponent()
+            evaluation.LargestConnectedComponent(),
+            evaluation.EigenVectors()
         ]
         self.histories = defaultdict(list)
 
