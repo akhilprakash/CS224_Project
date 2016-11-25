@@ -12,8 +12,9 @@ try:
     import matplotlib.pyplot as plt
 except ImportError:
     pass
-
-
+import scipy
+import numpy
+import pdb
 
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
@@ -104,6 +105,8 @@ class ReadingDistribution(Metric):
             plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
             plt.close()
 
+    def save(self, history):
+        util.writeCSV(out_path("readingDistribution"), history)
 
 class PathsBetweenPoliticalnesses(Metric):
     def __init__(self, politicalness1=-2, politicalness2=2):
@@ -131,6 +134,9 @@ class PathsBetweenPoliticalnesses(Metric):
         plt.ylabel("Average Distance Between Polticalness")
         plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
         plt.savefig(out_path(self.safe_name + '.png'))
+
+    def save(self, history):
+        util.writeCSV(out_path("pathsbetweenpolticalness" + str(self.politicalness1) + str(self.politicalness2)), history) 
 
 class Modularity(Metric):
     def measure(self, network, iterations):
@@ -211,23 +217,54 @@ class ArticleDegreeDistribution(Metric):
     def measure(self, network, iterations):
         return map(lambda x: x[1], getArticleDegreeDistribution(network, self.article_type))
 
+    def plot(self, history):
+        for i,h in enumerate(history):
+            plt.figure()
+            plt.hist(h)
+            plt.xlabel("Aricle Degree")
+            plt.ylabel("Frequency")
+            plt.title("Histogram of Article Degree")
+            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png'))
+            plt.close()
+
     def save(self, history):
         # This is for Akhil's R plots
         if self.article_type == 'all':
             util.writeCSV(out_path("articleDegree"), history)
         elif self.article_type == 'alive':
-            print_error('skipping CSV for alive article degree dist')
+            util.writeCSV(out_path("aliveAricleDegree"), history)
         elif self.article_type == 'dead':
             util.writeCSV(out_path("deadArticle"), history)
 
 
 class DistributionOfLifeTime(Metric):
+
+    def __init__(self, article_type):
+        self.article_type = article_type
+
     def measure(self, network, iterations):
         lifeTime = []
         for article in network.articles.itervalues():
-            if not article.getIsDead():
+            if self.article_type == "alive" and not article.getIsDead():
+                lifeTime.append(article.getTimeToLive() - iterations)
+            if self.article_type == "dead" and article.getIsDead():
                 lifeTime.append(article.getTimeToLive() - iterations)
         return lifeTime
+
+    def plot(self, history):
+        for i,h in enumerate(history):
+            plt.figure()
+            plt.hist(h)
+            plt.xlabel("Aricle Lifetime")
+            plt.ylabel("Frequency")
+            plt.title("Histogram of Article Lifetime")
+            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png'))
+            plt.close()
+
+    def save(self, history):
+        util.writeCSV(out_path("article lifetime disitburtion" + self.article_type), history)
+
+
 
 class AliveArticles(Metric):
     def measure(self, network, iterations):
@@ -311,6 +348,9 @@ class DeadArticles(Metric):
         """
         util.writeCSV(out_path("numberDeadArticles"), history)
 
+def printGraph(graph):
+    for EI in graph.Edges():
+        print "edge (%d, %d)" % (EI.GetSrcNId(), EI.GetDstNId())
 
 class ClusterPolticalness(Metric):
 
@@ -319,6 +359,7 @@ class ClusterPolticalness(Metric):
 
     # triangles
     def clusterOneNode(self, node, graph):
+        #printGraph(graph)
         degree = node.GetOutDeg()
         if degree < 2:
             return 0
@@ -335,12 +376,14 @@ class ClusterPolticalness(Metric):
         userArticleGraph = network.userArticleGraph
         cluster = []
         for user in network.users.itervalues():
+            #if iterations > 35 and self.polticalness == "all":
+                #pdb.set_trace()
             if self.polticalness == "all" or str(
                     user.getPoliticalness()) == self.polticalness:
                 result = self.clusterOneNode(
                     userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
                 cluster.append(result)
-        return cluster
+        return mean(cluster)
 
     def plot(self, history):
         """
@@ -348,6 +391,7 @@ class ClusterPolticalness(Metric):
         appropriate plot of this metric over time.
         """
         numIterations = len(history)
+        print history
         plt.figure()
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
@@ -397,6 +441,13 @@ class LargestConnectedComponent(Metric):
         plt.clf()
         plt.close()
 
+    def save(self, history):
+        largestComponent = map(max, history)
+        util.writeCSV(out_path("largestCompeonent"), history)
+        numComponents = map(len, history)
+        util.writeCSV(out_path("numberCompeonent"), history)
+
+
 class EigenVectors(Metric):
 
     def measure(self, network, iterations):
@@ -417,4 +468,148 @@ class EigenVectors(Metric):
         plt.savefig(out_path(self.safe_name + ".png"))
         plt.close()
 
+def getEigenVectorEigenValue(network):
+    counter = 0
+    uIdOrAIdToMatrix = {}
+    for uId, user in network.users.items():
+        uIdOrAIdToMatrix[uId] = counter
+        counter = counter + 1
+    for aId, article in network.articles.items():
+        uIdOrAIdToMatrix[aId] = counter
+        counter = counter + 1
+    matrix = [[0 for _ in range(0, counter)] for _ in range(0, counter)]
+    for edges in network.userArticleGraph.Edges():
+        src = edges.GetSrcNId()
+        dest = edges.GetDstNId()
+        matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
+        matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
+    #print matrix
+    #print len(matrix)
+    #print len(matrix[0])
+    laplacian = scipy.sparse.csgraph.laplacian(numpy.array(matrix))
+    eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
+    #print eigenvalue
+    #print eigenvector
+    #result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
+    eigenvalueIdx = eigenvalue.argsort()
+    result = eigenvector[:, eigenvalueIdx]
+    return (result, uIdOrAIdToMatrix, matrix)
+
+class MoreEigenVectors(Metric):
+
+    def measure(self, network, iterations):
+        # counter = 0
+        # uIdOrAIdToMatrix = {}
+        # for uId, user in network.users.items():
+        #     uIdOrAIdToMatrix[uId] = counter
+        #     counter = counter + 1
+        # for aId, article in network.articles.items():
+        #     uIdOrAIdToMatrix[aId] = counter
+        #     counter = counter + 1
+        # matrix = [[0 for _ in range(0, counter)] for _ in range(0, counter)]
+        # for edges in network.userArticleGraph.Edges():
+        #     src = edges.GetSrcNId()
+        #     dest = edges.GetDstNId()
+        #     matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
+        #     matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
+        # laplacian = scipy.sparse.csgraph.laplacian(matrix)
+        # eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
+        # result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
+        result = getEigenVectorEigenValue(network)
+        eigenvector = result[0]
+        return eigenvector[:,1]
+
+    def plot(self, history):
+        for i,eigenvector in enumerate(history):
+            sortedEigenvector = sorted(eigenvector)
+            plt.figure()
+            plt.plot(sortedEigenvector)
+            plt.xlabel("Rank of Eigenvector")
+            plt.ylabel("Values of Eigenvector")
+            plt.title("Second Eigenvector")
+            plt.savefig(out_path(self.safe_name + "time=" + str(i) + ".png"))
+            plt.close()
+
 #number of common articles between users
+class CommonArticles(Metric):
+
+    def __init__(self, politicalness1=-2, politicalness2=2):
+        self.politicalness1 = politicalness1
+        self.politicalness2 = politicalness2
+
+    def measure(self, network, iterations):
+        userArticleGraph = network.userArticleGraph
+        negativeTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness1)
+        posTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness2)
+        negativeTwo = random.sample(negativeTwo, min(20, len(negativeTwo)))
+        posTwo = random.sample(posTwo, min(20, len(posTwo)))
+        commonNeighs = []
+        
+        for s in posTwo:
+            for v in negativeTwo:
+                Nbrs = snap.TIntV()
+                snap.GetCmnNbrs(userArticleGraph, s, v, Nbrs)
+                commonNeighs.append(len(Nbrs))
+        return mean(commonNeighs)
+
+    def plot(self, history):
+        plt.figure()
+        plt.plot(history)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Common Neighbors")
+        plt.title("Common Neighbors between " + str(self.politicalness1) + " and " + str(self.politicalness2))
+        plt.savefig(out_path(self.safe_name + "polticalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
+        plt.close()
+
+
+    def save(self, history):
+        util.writeCSV(out_path("CommonArticles_" + "polticalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
+
+class VisualizeGraph(Metric):
+
+    def measure(self, network, iterations):
+        eigenvector, dictionary, matrix = getEigenVectorEigenValue(network)
+        
+        twoEigenVectors = eigenvector[1:3,:]
+        #pdb.set_trace()
+        #print twoEigenVectors
+        self.network = network
+        return (twoEigenVectors, dictionary, matrix)
+
+    def plot(self, history):
+        counter = 0
+        for (eigenVectors, dictionary, matrix) in history:
+            plt.figure()
+
+            #plot all the articles
+            for aId,_ in self.network.articles.items():
+                mId = dictionary[aId]
+                #pdb.set_trace()
+                print dictionary
+                print aId
+                print mId
+                print eigenVectors
+                
+                plt.scatter([eigenVectors[0,mId]], [eigenVectors[1, mId]], c='r')
+                
+
+            #want [-2, 2]
+            pch = {-2: "o", -1: "8", 0: "h", 1: "+", 2: "D"}
+            for polticalness in range(-2, 3):
+                userIds = self.network.getUserIdsWithSpecificPoliticalness(polticalness)
+                for uId in userIds:
+                    mId = dictionary[uId]
+                    plt.scatter(eigenVectors[mId,0], eigenVectors[mId, 1], pch[polticalness])
+
+            for row in range(0, len(matrix)):
+                for col in range(0, len(matrix[row])):
+                    if matrix[row][col] == 1:
+                        plt.plot([eigenVectors[row,0], eigenVectors[col, 0]], [eigenVectors[row,1], eigenVectors[col, 1]], 'k-')
+
+            plt.title("Graph Representation")
+            plt.savefig(out_path(self.safe_name + "time=" + str(counter) +".png"))
+            plt.close()
+            counter = counter + 1
+
+    def save(self, history):
+        util.writeCSV(out_path("eigenvectorsgraphrepresentation"), history)

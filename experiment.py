@@ -13,7 +13,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 1000
+    NUM_SIMULATIONS = 200
 
     def __init__(self):
         self.articleGenerators = []
@@ -22,13 +22,13 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
         self.recommender = recommendation.PopularRecommender()
-        self.distributionResults = []
-        self.pathResults = []
-        self.userDegreeDistribution = []
-        self.articleDegreeDistribution = []
-        self.aliveArticleDegreeDistribution = []
-        self.deadArticleDegreeDistribution = []
-        self.lifeTimeDistribution = []
+        #self.distributionResults = []
+        #self.pathResults = []
+        #self.userDegreeDistribution = []
+        #self.articleDegreeDistribution = []
+        #self.aliveArticleDegreeDistribution = []
+        #self.deadArticleDegreeDistribution = []
+        #self.lifeTimeDistribution = []
         self.metrics = [
             evaluation.ReadingDistribution(),
             evaluation.PathsBetweenPoliticalnesses(),
@@ -42,17 +42,26 @@ class Experiment(object):
             evaluation.ArticleDegreeDistribution("all"),
             evaluation.ArticleDegreeDistribution("alive"),
             evaluation.ArticleDegreeDistribution("dead"),
-            evaluation.DistributionOfLifeTime(),
+            evaluation.DistributionOfLifeTime("alive"),
             evaluation.AliveArticles(),
             evaluation.DeadArticles(),
             evaluation.OverallClustering(),
-            evaluation.ClusterPolticalness("-2"),
-            evaluation.ClusterPolticalness("-1"),
-            evaluation.ClusterPolticalness("0"),
-            evaluation.ClusterPolticalness("1"),
-            evaluation.ClusterPolticalness("2"),
+            #evaluation.ClusterPolticalness("-2"),
+            #evaluation.ClusterPolticalness("-1"),
+            #evaluation.ClusterPolticalness("0"),
+            #evaluation.ClusterPolticalness("1"),
+            #evaluation.ClusterPolticalness("2"),
+            evaluation.ClusterPolticalness("all"),
             evaluation.LargestConnectedComponent(),
-            evaluation.EigenVectors()
+            evaluation.EigenVectors(),
+            evaluation.MoreEigenVectors(),
+            evaluation.CommonArticles(-2, 2),
+            evaluation.CommonArticles(-1, 2),
+            evaluation.CommonArticles(-2, 1),
+            evaluation.CommonArticles(1,2),
+            evaluation.CommonArticles(2,2),
+            evaluation.CommonArticles(-2, -2),
+            #evaluation.VisualizeGraph()
         ]
         self.histories = defaultdict(list)
 
@@ -76,17 +85,35 @@ class Experiment(object):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
-        randReaders = random.sample(self.network.users, 1)
+        randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.PLike(reader, article)
+            probLike = self.PLike(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
-                self.network.addEdge(reader, article)
-                neighbors = self.network.getOutEdges(reader.getUserId())
-                rand = random.sample(neighbors, 1)
+                self.network.addEdge(self.network.users[reader], article)
+                neighbors = self.network.userArticleGraph.GetNI(reader).GetOutEdges()
+                neighs = []
+                for n in neighbors:
+                    neighs.append(n)
+                rand = random.sample(neighs, 1)
+                print rand
+                #rand is an article
+                users = []
                 for r in rand:
-                    self.network.addEdge(r, article)
-        self.runAnalysis()
+                    neighbors = self.network.userArticleGraph.GetNI(r).GetOutEdges()
+                    for n in neighbors:
+                        users.append(n)
+                rand = random.sample(users, 1)
+                for r in rand:
+                    self.network.addEdge(self.network.users[r], article)
+        if iterations % 5 == 0:
+            users = self.network.getUsersWithDegree0()
+            for u in users:
+                probLike = self.PLike(u, article)
+                if random.random() < probLike:
+                    self.network.addEdge(u, article)
+
+        self.runAnalysis(iterations)
 
     def simulate(self, iterations):
         readers = self.network.getNextReaders()
@@ -120,6 +147,12 @@ class Experiment(object):
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
 
+        if iterations % 5 == 0:
+            users = self.network.getUsersWithDegree0()
+            for u in users:
+                probLike = self.PLike(u, article)
+                if random.random() < probLike:
+                    self.network.addEdge(u, article)
         self.runAnalysis(iterations)
 
     def runAnalysis(self, iterations):

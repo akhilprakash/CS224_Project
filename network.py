@@ -98,3 +98,9 @@ class Network(object):
     def getUser(self, userId):
         return self.users[userId]
 
+    def getUsersWithDegree0(self):
+        users = []
+        for user in self.users.itervalues():
+            if self.userArticleGraph.GetNI(user.getUserId()).GetOutDeg() == 0:
+                users.append(user)
+        return users
