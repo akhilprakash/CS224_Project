@@ -14,6 +14,7 @@ except ImportError:
     pass
 import scipy
 import numpy
+import collections
 import pdb
 
 def mean(numbers):
@@ -138,6 +139,57 @@ class PathsBetweenPoliticalnesses(Metric):
     def save(self, history):
         util.writeCSV(out_path("pathsbetweenpolticalness" + str(self.politicalness1) + str(self.politicalness2)), history) 
 
+class Modularity2(Metric):
+    def measure(self, network, iterations):
+        CmtyV = snap.TCnComV()
+        modularity = snap.CommunityGirvanNewman(network.userArticleGraph, CmtyV)
+        polticalnessByCommunity = {}
+        for Cmty in CmtyV:
+            for NI in Cmty:
+                polticalness = 0
+                if NI in network.users:
+                    polticalness = network.users[NI].getPoliticalness()
+                elif NI in network.articles:
+                    polticalness = network.articles[NI].getPoliticalness()
+                else:
+                    print "error"
+                if Cmty in polticalnessByCommunity:
+                    innerDict = polticalnessByCommunity[Cmty]
+                    if polticalness in innerDict:
+                        polticalnessByCommunity[Cmty][polticalness] = polticalnessByCommunity[Cmty][polticalness] + 1
+                    else:
+                        polticalnessByCommunity[Cmty][polticalness] = 1
+                else:
+                    polticalnessByCommunity[Cmty] = collections.defaultdict(int)
+                    polticalnessByCommunity[Cmty][polticalness] = 1
+
+        return [modularity, polticalnessByCommunity]
+
+    def plot(self, history):
+        modularity = map(lambda x: x[0], history)
+        plt.figure()
+        plt.plot(modularity)
+        plt.xlabel("Number of Iterations")
+        plt.ylabel("Modularity of whole netowrk")
+        plt.savefig(out_path(self.safe_name + ".png"))
+        polticalnessByCommunityHistory = map(lambda x: x[1], history)
+        polticalnessByCommunityHistory = polticalnessByCommunityHistory[(len(polticalnessByCommunityHistory)-5):len(polticalnessByCommunityHistory)]
+        for i, h in enumerate(polticalnessByCommunityHistory):
+            for cmty, innerDict in h.items():
+                values = []
+                for pol in range(-2, 3):
+                    values.append(innerDict[pol])
+                plt.figure()
+                plt.bar(range(-2, 3), values)
+                plt.xlabel("Polticalness")
+                plt.ylabel("Count")
+                plt.title("Count vs. Polticalness Community = " + str(cmty))
+                plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png'))
+                plt.close()
+
+    def save(self, history):
+        util.writeCSV(out_path("modularity2"), history)
+
 class Modularity(Metric):
     def measure(self, network, iterations):
         result = []
@@ -147,6 +199,7 @@ class Modularity(Metric):
             for ni in ids:
                 Nodes.Add(ni)
             result.append(snap.GetModularity(network.userArticleGraph, Nodes))
+
         return result
 
     def plot(self, history):
@@ -160,8 +213,16 @@ class Modularity(Metric):
     def save(self, history):
         util.writeCSV(out_path("modularity"), history)
 
+def copyGraph(graph):
+    copyGraph = snap.TUNGraph.New()
+    for node in graph.Nodes():
+        copyGraph.AddNode(node.GetId())
+    for edge in graph.Edges():
+        copyGraph.AddEdge(edge.GetSrcNId(), edge.GetDstNId())
+    return copyGraph
 
 class Betweenness(Metric):
+
     def measure(self, network, iterations):
         Nodes = snap.TIntFltH()
         Edges = snap.TIntPrFltH()
@@ -174,9 +235,64 @@ class Betweenness(Metric):
         betweenessCentr = []
         for edge in Edges:
             betweenessCentr.append((edge, Edges[edge]))
+        betweenessCentr.sort(key = lambda x: x[1], reverse = True)
+        copyOfGraph = copyGraph(network.userArticleGraph)
+        components = snap.TCnComV()
+        snap.GetWccs(copyOfGraph, components)
+        numEdgesRemoved = 0
 
-        return betweenessCentr
+        while len(components) != 5 and numEdgesRemoved < 20:
+            copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
+            components = snap.TCnComV()
+            snap.GetWccs(copyOfGraph, components)
+            numEdgesRemoved = numEdgesRemoved + 1
+            print "numEdges removed = " + str(numEdgesRemoved)
+        components = snap.TCnComV()
+        snap.GetWccs(copyOfGraph, components)
+        values = []
+        for CnCom in components:
+            dictionary = collections.defaultdict(int)
+            for NI in CnCom:
+                polticalness = 0
+                if NI in network.users:
+                    polticalness = network.users[NI].getPoliticalness()
+                elif NI in network.articles:
+                    polticalness = network.articles[NI].getPoliticalness()
+                else:
+                    print "error"
+                dictionary[polticalness] = dictionary[polticalness] + 1
+            values.append(dictionary)
+        return [betweenessCentr, values]
 
+    def plot(self, history):
+        betweeness = map(lambda x: x[0], history)
+        betweeness = betweeness[(len(betweeness)-10):len(betweeness)]
+        for i,b in enumerate(betweeness):
+            plt.figure()
+            print b
+            pdb.set_trace()
+            plt.plot(sorted(map(lambda x: x[1], b)))
+            plt.xlabel("Edge Ordering")
+            plt.ylabel("Edge Betweenness")
+            plt.title("Edge Betweeness")
+            plt.savefig(out_path(self.safe_name + "iteartions=" + str(i) + '.png'))
+            plt.close()
+        values = map(lambda x: x[1], history)
+        values = values[(len(values)-10):len(values)]
+        for i, innerDict in enumerate(values):
+            val = []
+            for pol in range(-2, 3):
+                val.append(innerDict[pol])
+            plt.figure()
+            plt.bar(range(-2, 3), val)
+            plt.xlabel("Polticalness")
+            plt.ylabel("Count")
+            plt.title("Count vs. Polticalness Community = "+ str(i))
+            plt.savefig(out_path(self.safe_name + "Community iterations=" + str(i) + '.png'))
+            plt.close()
+
+    def save(self, history):
+        util.writeCSV(out_path("modularity2"), history)
 
 class UserDegreeDistribution(Metric):
     def __init__(self, politicalness="all"):
@@ -321,6 +437,7 @@ class OverallClustering(Metric):
         plt.ylabel("Clustering Coefficient")
         plt.title("Clustering Coefficient vs. Number of Iterations")
         plt.savefig(out_path(self.safe_name + '.png'))
+        plt.close()
 
     def save(self, history):
         """

@@ -13,7 +13,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 200
+    NUM_SIMULATIONS = 20
 
     def __init__(self):
         self.articleGenerators = []
@@ -46,21 +46,23 @@ class Experiment(object):
             evaluation.AliveArticles(),
             evaluation.DeadArticles(),
             evaluation.OverallClustering(),
-            #evaluation.ClusterPolticalness("-2"),
+            evaluation.ClusterPolticalness("-2"),
             #evaluation.ClusterPolticalness("-1"),
             #evaluation.ClusterPolticalness("0"),
             #evaluation.ClusterPolticalness("1"),
             #evaluation.ClusterPolticalness("2"),
             evaluation.ClusterPolticalness("all"),
             evaluation.LargestConnectedComponent(),
-            evaluation.EigenVectors(),
-            evaluation.MoreEigenVectors(),
+            #evaluation.EigenVectors(),
+            #evaluation.MoreEigenVectors(),
             evaluation.CommonArticles(-2, 2),
             evaluation.CommonArticles(-1, 2),
             evaluation.CommonArticles(-2, 1),
             evaluation.CommonArticles(1,2),
             evaluation.CommonArticles(2,2),
             evaluation.CommonArticles(-2, -2),
+            evaluation.Betweenness(),
+            #evaluation.Modularity2()
             #evaluation.VisualizeGraph()
         ]
         self.histories = defaultdict(list)
@@ -128,7 +130,7 @@ class Experiment(object):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
-        #self.forceConnectedGraph(iterations, article)
+        self.forceConnectedGraph(iterations, article)
         for reader in readers:
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
