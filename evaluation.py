@@ -16,6 +16,7 @@ import scipy
 import numpy
 import collections
 import pdb
+import os
 
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
@@ -134,7 +135,7 @@ class PathsBetweenPoliticalnesses(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Average Distance Between Polticalness")
         plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
-        plt.savefig(out_path(self.safe_name + '.png'))
+        plt.savefig(out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
 
     def save(self, history):
         util.writeCSV(out_path("pathsbetweenpolticalness" + str(self.politicalness1) + str(self.politicalness2)), history) 
@@ -152,7 +153,7 @@ class Modularity2(Metric):
                 elif NI in network.articles:
                     polticalness = network.articles[NI].getPoliticalness()
                 else:
-                    print "error"
+                    raise Exception("Error in finding polticalness")
                 if Cmty in polticalnessByCommunity:
                     innerDict = polticalnessByCommunity[Cmty]
                     if polticalness in innerDict:
@@ -179,13 +180,16 @@ class Modularity2(Metric):
                 values = []
                 for pol in range(-2, 3):
                     values.append(innerDict[pol])
-                plt.figure()
-                plt.bar(range(-2, 3), values)
-                plt.xlabel("Polticalness")
-                plt.ylabel("Count")
-                plt.title("Count vs. Polticalness Community = " + str(cmty))
-                plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png'))
-                plt.close()
+                try:
+                    plt.figure()
+                    plt.bar(range(-2, 3), values)
+                    plt.xlabel("Polticalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Polticalness Community = " + str(cmty))
+                    plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png', "Modularity2"))
+                    plt.close()
+                except IOError:
+                    print_error("Error making plot")
 
     def save(self, history):
         util.writeCSV(out_path("modularity2"), history)
@@ -207,7 +211,7 @@ class Modularity(Metric):
             plt.figure()
             oneCluster = map(lambda x:x[idx], history)
             plt.plot(oneCluster)
-            plt.savefig(out_path(self.safe_name + 'polticalness' + str(i) + '.png'))
+            plt.savefig(out_path(self.safe_name + 'polticalness' + str(i) + '.png', "Modularity"))
             plt.close()
 
     def save(self, history):
@@ -241,7 +245,7 @@ class Betweenness(Metric):
         snap.GetWccs(copyOfGraph, components)
         numEdgesRemoved = 0
 
-        while len(components) != 5 and numEdgesRemoved < 20:
+        while len(components) != 5 and numEdgesRemoved < min(20, len(betweenessCentr)):
             copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
             components = snap.TCnComV()
             snap.GetWccs(copyOfGraph, components)
@@ -269,8 +273,6 @@ class Betweenness(Metric):
         betweeness = betweeness[(len(betweeness)-10):len(betweeness)]
         for i,b in enumerate(betweeness):
             plt.figure()
-            print b
-            pdb.set_trace()
             plt.plot(sorted(map(lambda x: x[1], b)))
             plt.xlabel("Edge Ordering")
             plt.ylabel("Edge Betweenness")
@@ -278,18 +280,20 @@ class Betweenness(Metric):
             plt.savefig(out_path(self.safe_name + "iteartions=" + str(i) + '.png'))
             plt.close()
         values = map(lambda x: x[1], history)
-        values = values[(len(values)-10):len(values)]
+        values = values[(len(values)-5):len(values)]
         for i, innerDict in enumerate(values):
-            val = []
-            for pol in range(-2, 3):
-                val.append(innerDict[pol])
-            plt.figure()
-            plt.bar(range(-2, 3), val)
-            plt.xlabel("Polticalness")
-            plt.ylabel("Count")
-            plt.title("Count vs. Polticalness Community = "+ str(i))
-            plt.savefig(out_path(self.safe_name + "Community iterations=" + str(i) + '.png'))
-            plt.close()
+            for j,v in enumerate(innerDict):
+                if j < 5:
+                    val = []
+                    for pol in range(-2, 3):
+                        val.append(v[pol])
+                    plt.figure()
+                    plt.bar(range(-2, 3), val)
+                    plt.xlabel("Polticalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Polticalness Community = "+ str(i))
+                    plt.savefig(out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness"))
+                    plt.close()
 
     def save(self, history):
         util.writeCSV(out_path("modularity2"), history)
@@ -348,7 +352,7 @@ class ArticleDegreeDistribution(Metric):
             plt.xlabel("Aricle Degree")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Degree")
-            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png'))
+            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "AritcleDegree"))
             plt.close()
 
     def save(self, history):
@@ -382,7 +386,7 @@ class DistributionOfLifeTime(Metric):
             plt.xlabel("Aricle Lifetime")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Lifetime")
-            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png'))
+            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "LifetimeDistribution"))
             plt.close()
 
     def save(self, history):
@@ -546,7 +550,7 @@ class LargestConnectedComponent(Metric):
         for i,elem in enumerate(history):
             plt.figure()
             plt.bar(range(len(elem)), elem)
-            plt.savefig(out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png'))
+            plt.savefig(out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
             plt.close()
         largestComponent = map(max, history)
         plt.figure()
@@ -654,7 +658,7 @@ class MoreEigenVectors(Metric):
             plt.xlabel("Rank of Eigenvector")
             plt.ylabel("Values of Eigenvector")
             plt.title("Second Eigenvector")
-            plt.savefig(out_path(self.safe_name + "time=" + str(i) + ".png"))
+            plt.savefig(out_path(self.safe_name + "time=" + str(i) + ".png", "Eigenvectors"))
             plt.close()
 
 #number of common articles between users

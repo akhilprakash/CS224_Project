@@ -13,7 +13,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 20
+    NUM_SIMULATIONS = 200
 
     def __init__(self):
         self.articleGenerators = []
@@ -62,7 +62,7 @@ class Experiment(object):
             evaluation.CommonArticles(2,2),
             evaluation.CommonArticles(-2, -2),
             evaluation.Betweenness(),
-            #evaluation.Modularity2()
+            evaluation.Modularity2()
             #evaluation.VisualizeGraph()
         ]
         self.histories = defaultdict(list)
