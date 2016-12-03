@@ -140,17 +140,25 @@ class PathsBetweenPoliticalnesses(Metric):
 
 class Modularity(Metric):
     def measure(self, network, iterations):
-        Nodes = snap.TIntV()
-        for ni in network.userArticleGraph.Nodes():
-            Nodes.Add(ni.GetId())
-        print snap.GetModularity(network.userArticleGraph, Nodes)
-        return snap.GetModularity(network.userArticleGraph, Nodes)
+        result = []
+        for idx, i in enumerate(range(-2, 3)):
+            ids = network.getUserIdsWithSpecificPoliticalness(i)
+            Nodes = snap.TIntV()
+            for ni in ids:
+                Nodes.Add(ni)
+            result.append(snap.GetModularity(network.userArticleGraph, Nodes))
+        return result
 
     def plot(self, history):
-        plt.figure()
-        plt.plot(history)
-        plt.savefig(out_path(self.safe_name + '.png'))
-        plt.close()
+        for idx, i in enumerate(range(-2, 3)):
+            plt.figure()
+            oneCluster = map(lambda x:x[idx], history)
+            plt.plot(oneCluster)
+            plt.savefig(out_path(self.safe_name + 'polticalness' + str(i) + '.png'))
+            plt.close()
+
+    def save(self, history):
+        util.writeCSV(out_path("modularity"), history)
 
 
 class Betweenness(Metric):
@@ -299,7 +307,8 @@ class AliveArticles(Metric):
 
 class OverallClustering(Metric):
     def measure(self, network, iterations):
-        return snap.GetClustCf(network.userArticleGraph)
+        #printGraph(network.userArticleGraph)
+        return snap.GetClustCf(network.userArticleGraph, -1)
 
     def plot(self, history):
         """
@@ -363,9 +372,9 @@ class ClusterPolticalness(Metric):
         degree = node.GetOutDeg()
         if degree < 2:
             return 0
-        neighborsOfNode = node.GetOutEdges()
         counter = 0
-        for id in neighborsOfNode:
+        for i in range(node.GetDeg()):
+            id = node.GetNbrNId(i) 
             for k in node.GetOutEdges():
                 if graph.IsEdge(k, id):
                     counter = counter + 1
@@ -516,6 +525,7 @@ class MoreEigenVectors(Metric):
         # eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
         # result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
         result = getEigenVectorEigenValue(network)
+        util.writeCSV(out_path("adjacencyMatrix_iterations=" + str(iterations)), result[2])
         eigenvector = result[0]
         return eigenvector[:,1]
 

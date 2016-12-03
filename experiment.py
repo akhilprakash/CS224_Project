@@ -106,14 +106,20 @@ class Experiment(object):
                 rand = random.sample(users, 1)
                 for r in rand:
                     self.network.addEdge(self.network.users[r], article)
-        if iterations % 5 == 0:
-            users = self.network.getUsersWithDegree0()
-            for u in users:
-                probLike = self.PLike(u, article)
-                if random.random() < probLike:
-                    self.network.addEdge(u, article)
+        # if iterations % 5 == 0:
+        #     users = self.network.getUsersWithDegree0()
+        #     for u in users:
+        #         probLike = self.PLike(u, article)
+        #         if random.random() < probLike:
+        #             self.network.addEdge(u, article)
 
         self.runAnalysis(iterations)
+
+    def forceConnectedGraph(self, iterations, article):
+        if iterations == 0:
+            readers = self.network.users.values()
+            for reader in readers:
+                self.network.addEdge(reader, article)
 
     def simulate(self, iterations):
         readers = self.network.getNextReaders()
@@ -122,6 +128,7 @@ class Experiment(object):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
+        #self.forceConnectedGraph(iterations, article)
         for reader in readers:
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
@@ -147,12 +154,12 @@ class Experiment(object):
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
 
-        if iterations % 5 == 0:
-            users = self.network.getUsersWithDegree0()
-            for u in users:
-                probLike = self.PLike(u, article)
-                if random.random() < probLike:
-                    self.network.addEdge(u, article)
+        # if iterations % 5 == 0:
+        #     users = self.network.getUsersWithDegree0()
+        #     for u in users:
+        #         probLike = self.PLike(u, article)
+        #         if random.random() < probLike:
+        #             self.network.addEdge(u, article)
         self.runAnalysis(iterations)
 
     def runAnalysis(self, iterations):
