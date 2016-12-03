@@ -9,13 +9,18 @@ import os
 def generatePoliticalness(weights):
     	rand = random.random()
     	summation = sum(weights)
+        if summation == 0:
+            for i in range(0, len(weights)):
+                weights[i] = 1.0/len(weights)
+        else:
+        	for i in range(0, len(weights)):
+        		weights[i] = weights[i]/ (summation * 1.0)
+    	cumsum = 0
     	for i in range(0, len(weights)):
-    		weights[i] = weights[i]/ (summation * 1.0)
-    	cumsum = weights[0]
-    	for i in range(0, len(weights)):
-    		if rand < cumsum:
-    			return i
-    		cumsum = cumsum + weights[i]
+            cumsum = cumsum + weights[i]
+            if rand < cumsum:
+                return i
+    		
     	#should not reach here
     	raise Exception("Should not reach here")
 
@@ -75,10 +80,17 @@ def print_error(s):
 def data_path(filename):
     return os.path.join('data', filename)
 
+now = time.strftime("%c")
+def out_path(filename, subfolder=""):
+    if subfolder == "":
+        if not os.path.exists('out ' + str(now)):
+            print_error('Created `out` directory for result files.')
+            os.mkdir('out ' + str(now))
 
-def out_path(filename):
-    if not os.path.exists('out'):
-        print_error('Created `out` directory for result files.')
-        os.mkdir('out')
+        return os.path.join('out ' + str(now), filename)
+    else:
+        if not os.path.exists('out ' + str(now) + "/" + subfolder):
+            print_error('Created out' + subfolder +' directory for result files.')
+            os.makedirs('out ' + str(now)+ "/" + subfolder)
 
-    return os.path.join('out', filename)
+        return os.path.join('out ' + str(now)+ "/" + subfolder, filename)

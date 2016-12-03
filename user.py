@@ -18,6 +18,9 @@ class User(object):
     def getUserId(self):
         return self.userId
 
+    def setPoliticalness(self, p):
+        self.politicalness = p
+
     def __str__(self):
         result = "(UserId = " + str(self.userId) + ", ReadingRate = " + str(
             self.readingRate)

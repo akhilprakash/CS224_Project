@@ -5,7 +5,8 @@ import util
 from user import User
 import random
 import os
-
+import collections
+import pdb
 
 class Network(object):
 
@@ -24,10 +25,11 @@ class Network(object):
     def __init__(self):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
+        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "zacharys.csv"), 0, 1, ",")
+        #snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
-        self.initializeUsers()
+        self.intializeUsersAccordingToFriends()
 
     def addArticle(self, article):
         article.setArticleId(self.articleIdCounter)
@@ -58,6 +60,24 @@ class Network(object):
             polticalness = indexToPoliticalness[index]
             user = User(polticalness, node.GetId())
             self.addUser(user)
+
+    def intializeUsersAccordingToFriends(self):
+        #intilaize users randomly
+        self.initializeUsers()
+        NUM_ITERATIONS = 100
+        for _ in range(0, NUM_ITERATIONS):
+            for userId in self.users.keys():
+                potlicalnessOfFriends = [0 for _ in range(-2, 3)]
+                for friend in self.friendGraph.GetNI(userId).GetOutEdges():
+                    userFriend = self.getUser(friend)
+                    
+                    potlicalnessOfFriends[userFriend.getPoliticalness()+2] = potlicalnessOfFriends[userFriend.getPoliticalness()+2] + 1
+                user = self.getUser(userId)
+                idx = util.generatePoliticalness(potlicalnessOfFriends)
+                if potlicalnessOfFriends[idx] == 0:
+                    pdb.set_trace()
+                user.setPoliticalness(idx -2)
+
 
     def getBeta(self, userNodeId, slope=.5):
         return self.userArticleGraph.GetNI(userNodeId).GetOutDeg() * slope

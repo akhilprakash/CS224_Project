@@ -98,6 +98,7 @@ class ReadingDistribution(Metric):
             for k1, v1 in value.items():
                 keys.append(k1)
                 vals.append(v1)
+            print self.name
             plt.figure()
             plt.bar(keys, vals, color = "blue")
             plt.xlabel("Article Politicalness")
@@ -130,6 +131,7 @@ class PathsBetweenPoliticalnesses(Metric):
         return mean(distance)
 
     def plot(self, history):
+        print self.name
         plt.figure()
         plt.plot(history)
         plt.xlabel("Number of Iterations")
@@ -167,6 +169,7 @@ class Modularity2(Metric):
         return [modularity, polticalnessByCommunity]
 
     def plot(self, history):
+        print self.name
         modularity = map(lambda x: x[0], history)
         plt.figure()
         plt.plot(modularity)
@@ -181,12 +184,13 @@ class Modularity2(Metric):
                 for pol in range(-2, 3):
                     values.append(innerDict[pol])
                 try:
+                    print self.name
                     plt.figure()
                     plt.bar(range(-2, 3), values)
                     plt.xlabel("Polticalness")
                     plt.ylabel("Count")
                     plt.title("Count vs. Polticalness Community = " + str(cmty))
-                    plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png', "Modularity2"))
+                    plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i+len(modularity) -5) + '.png', "Modularity2"))
                     plt.close()
                 except IOError:
                     print_error("Error making plot")
@@ -208,6 +212,7 @@ class Modularity(Metric):
 
     def plot(self, history):
         for idx, i in enumerate(range(-2, 3)):
+            print self.name
             plt.figure()
             oneCluster = map(lambda x:x[idx], history)
             plt.plot(oneCluster)
@@ -273,6 +278,7 @@ class Betweenness(Metric):
         betweeness = betweeness[(len(betweeness)-10):len(betweeness)]
         for i,b in enumerate(betweeness):
             plt.figure()
+            print self.name
             plt.plot(sorted(map(lambda x: x[1], b)))
             plt.xlabel("Edge Ordering")
             plt.ylabel("Edge Betweenness")
@@ -283,7 +289,7 @@ class Betweenness(Metric):
         values = values[(len(values)-5):len(values)]
         for i, innerDict in enumerate(values):
             for j,v in enumerate(innerDict):
-                if j < 5:
+                if j < 15:
                     val = []
                     for pol in range(-2, 3):
                         val.append(v[pol])
@@ -292,7 +298,7 @@ class Betweenness(Metric):
                     plt.xlabel("Polticalness")
                     plt.ylabel("Count")
                     plt.title("Count vs. Polticalness Community = "+ str(i))
-                    plt.savefig(out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness"))
+                    plt.savefig(out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness_Community"))
                     plt.close()
 
     def save(self, history):
@@ -313,6 +319,7 @@ class UserDegreeDistribution(Metric):
 
     def plot(self, history):
         # Just plot the dist for the last iteration
+        print self.name
         last = history[-1]
         plt.figure()
         plt.hist(last)
@@ -381,6 +388,7 @@ class DistributionOfLifeTime(Metric):
 
     def plot(self, history):
         for i,h in enumerate(history):
+            print self.name
             plt.figure()
             plt.hist(h)
             plt.xlabel("Aricle Lifetime")
@@ -411,6 +419,7 @@ class AliveArticles(Metric):
         appropriate plot of this metric over time.
         """
         numIterations = len(history)
+        print self.name
         plt.figure()
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
@@ -435,6 +444,7 @@ class OverallClustering(Metric):
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
         """
+        print self.name
         plt.figure()
         plt.plot(history)
         plt.xlabel("Number of Iterations")
@@ -464,6 +474,7 @@ class DeadArticles(Metric):
         appropriate plot of this metric over time.
         """
         numIterations = len(history)
+        print self.name
         plt.figure()
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
@@ -521,7 +532,7 @@ class ClusterPolticalness(Metric):
         appropriate plot of this metric over time.
         """
         numIterations = len(history)
-        print history
+        print self.name
         plt.figure()
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
@@ -548,6 +559,7 @@ class LargestConnectedComponent(Metric):
 
     def plot(self, history):
         for i,elem in enumerate(history):
+            print self.name
             plt.figure()
             plt.bar(range(len(elem)), elem)
             plt.savefig(out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
@@ -590,6 +602,7 @@ class EigenVectors(Metric):
 
     def plot(self, history):
         last = history[-1]
+        print self.name
         plt.figure()
         plt.plot(last)
         plt.xlabel("Rank of Eigenvector")
@@ -653,6 +666,7 @@ class MoreEigenVectors(Metric):
     def plot(self, history):
         for i,eigenvector in enumerate(history):
             sortedEigenvector = sorted(eigenvector)
+            print self.name
             plt.figure()
             plt.plot(sortedEigenvector)
             plt.xlabel("Rank of Eigenvector")
@@ -685,6 +699,7 @@ class CommonArticles(Metric):
 
     def plot(self, history):
         plt.figure()
+        print self.name
         plt.plot(history)
         plt.xlabel("Number of Iterations")
         plt.ylabel("Common Neighbors")
@@ -711,6 +726,7 @@ class VisualizeGraph(Metric):
         counter = 0
         for (eigenVectors, dictionary, matrix) in history:
             plt.figure()
+            print self.name
 
             #plot all the articles
             for aId,_ in self.network.articles.items():

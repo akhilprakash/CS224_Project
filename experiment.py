@@ -13,7 +13,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 200
+    NUM_SIMULATIONS = 100
 
     def __init__(self):
         self.articleGenerators = []
@@ -22,13 +22,6 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
         self.recommender = recommendation.PopularRecommender()
-        #self.distributionResults = []
-        #self.pathResults = []
-        #self.userDegreeDistribution = []
-        #self.articleDegreeDistribution = []
-        #self.aliveArticleDegreeDistribution = []
-        #self.deadArticleDegreeDistribution = []
-        #self.lifeTimeDistribution = []
         self.metrics = [
             evaluation.ReadingDistribution(),
             evaluation.PathsBetweenPoliticalnesses(),
@@ -108,12 +101,13 @@ class Experiment(object):
                 rand = random.sample(users, 1)
                 for r in rand:
                     self.network.addEdge(self.network.users[r], article)
-        # if iterations % 5 == 0:
-        #     users = self.network.getUsersWithDegree0()
-        #     for u in users:
-        #         probLike = self.PLike(u, article)
-        #         if random.random() < probLike:
-        #             self.network.addEdge(u, article)
+        
+        if iterations % 5 == 0:
+            users = self.network.getUsersWithDegree0()
+            for u in users:
+                probLike = self.PLike(u, article)
+                if random.random() < probLike:
+                    self.network.addEdge(u, article)
 
         self.runAnalysis(iterations)
 
@@ -130,7 +124,7 @@ class Experiment(object):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
-        self.forceConnectedGraph(iterations, article)
+        #self.forceConnectedGraph(iterations, article)
         for reader in readers:
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
