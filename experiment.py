@@ -46,8 +46,8 @@ class Experiment(object):
             evaluation.ClusterPolticalness("2"),
             evaluation.ClusterPolticalness("all"),
             evaluation.LargestConnectedComponent(),
-            evaluation.EigenVectors(),
-            evaluation.MoreEigenVectors(),
+            #evaluation.EigenVectors(),
+            #evaluation.MoreEigenVectors(),
             evaluation.CommonArticles(-2, 2),
             evaluation.CommonArticles(-1, 2),
             evaluation.CommonArticles(-2, 1),
@@ -59,8 +59,8 @@ class Experiment(object):
             evaluation.BetweennessWRTFriends(),
             evaluation.OverallClusteringWRTFriends(),
             evaluation.ClusterPolticalnessWRTFriends("all"),
-            evaluation.EigenVectorsWRTFriends(),
-            evaluation.MoreEigenVectorsWRTFriends(),
+            #evaluation.EigenVectorsWRTFriends(),
+            #evaluation.MoreEigenVectorsWRTFriends(),
         ]
         self.histories = defaultdict(list)
 
@@ -172,7 +172,7 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
-    def simulate(self, iterations):
+    def simulate(self, iterations, all_analyses=True):
         readers = self.network.getNextReaders() # get readers that can read at this time point
 
         # Introduce a new article
@@ -211,11 +211,17 @@ class Experiment(object):
         #         probLike = self.PLike(u, article)
         #         if random.random() < probLike:
         #             self.network.addEdge(u, article)
-        self.runAnalysis(iterations)
+        self.runAnalysis(iterations, all_analyses)
 
-    def runAnalysis(self, iterations):
-        for metric in self.metrics:
-            self.histories[metric].append(metric.measure(self.network, iterations))
+    def runAnalysis(self, iterations, all=True):
+        if all:
+            for metric in self.metrics:
+                self.histories[metric].append(metric.measure(self.network, iterations))
+        else:
+            metricsToRun = [evaluation.ReadingDistribution()] #evaluation.Statistics()]
+            for metric in metricsToRun:
+                self.histories[metric].append(metric.measure(self.network, iterations))
+
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
@@ -223,9 +229,10 @@ class Experiment(object):
             if not article.getIsDead() and article.getTimeToLive() < iterations:
                 article.setIsDead(True)
     
-    def runAllSimulation(self):
+    def runAllSimulation(self, all_analyses=True):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=False):
-            self.triadicClosureBasedOnFriends(i)
+            self.simulate(100, all_analyses)
+            # self.triadicClosureBasedOnFriends(i)
             self.killArticles(i)
         #print self.distributionResults
 
@@ -245,5 +252,5 @@ class Experiment(object):
 
 if __name__ == "__main__":
     exp = Experiment()
-    exp.runAllSimulation()
+    exp.runAllSimulation(all_analyses=False)
     exp.saveResults()

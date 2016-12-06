@@ -8,6 +8,10 @@ import random
 import random
 import util
 from util import print_error, out_path
+
+import matplotlib
+matplotlib.use('Agg')
+
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -65,6 +69,9 @@ class Metric(object):
 
     def __repr__(self):
         return self.__str__()
+
+# class Statistics(Metric):
+#    def measure(self, network, iterations):
 
 
 class ReadingDistribution(Metric):
@@ -696,6 +703,7 @@ class EigenVectors(Metric):
         plt.savefig(out_path(self.safe_name + ".png"))
         plt.close()
 
+'''
 def getEigenVectorEigenValue(network, graph, iterations):
     counter = 0
     uIdOrAIdToMatrix = {}
@@ -731,6 +739,7 @@ def getEigenVectorEigenValue(network, graph, iterations):
     eigenvalueIdx = eigenvalue.argsort()
     result = eigenvector[:, eigenvalueIdx]
     return (result, uIdOrAIdToMatrix, matrix)
+'''
 
 class EigenVectorsWRTFriends(EigenVectors):
 
