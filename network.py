@@ -31,18 +31,21 @@ class Network(object):
             maxNodeId = max(node.GetId(), maxNodeId)
         return maxNodeId
 
-    def __init__(self):
+    def __init__(self, initialize):
         self.users = {}
         self.articles = {}
         self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "zacharys.csv"), 0, 1, ",")
         #snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
-        #
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
         self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "zacharys.csv"), 0, 1, ",")
         #snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
-        #self.initializeUsers()
-        self.initializeUsersBasedOn2Neg2()
+        if initialize == "1":
+            self.initializeUsersBasedOn2Neg2()
+        elif initialize == "2":
+            self.initializeUsers()
+        elif initialize == "3":
+            self.intializeUsersAccordingToFriends()
 
     def spreadPolticalness(self, nodeId, depth):
         poltical = self.users[nodeId].getPoliticalness()
@@ -174,7 +177,6 @@ class Network(object):
                 potlicalnessOfFriends = [0 for _ in range(-2, 3)]
                 for friend in self.friendGraph.GetNI(userId).GetOutEdges():
                     userFriend = self.getUser(friend)
-                    
                     potlicalnessOfFriends[userFriend.getPoliticalness()+2] = potlicalnessOfFriends[userFriend.getPoliticalness()+2] + 1
                 user = self.getUser(userId)
                 idx = util.generatePoliticalness(potlicalnessOfFriends)
