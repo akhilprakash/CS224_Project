@@ -1,10 +1,16 @@
 """Recommendation Engines
 """
+from __future__ import division
 import heapq
 import collections
+import itertools
+
+from util import PairsDict
 
 
+# TODO: Uniform-among-friends-liked-articles Null Recommender
 # TODO: don't recommend dead articles
+# TODO: LSA-based recommender??
 
 class Recommender(object):
     def makeRecommendations(self, network, readers, N=1):
@@ -60,11 +66,51 @@ class RecommendBasedOnFriends(Recommender):
 
 class CollaborativeFiltering(Recommender):
     """Item-item collaborative filtering"""
+    K = 5
+
     def makeRecommendations(self, network, readers, N=1):
-        # (Compute similarities between all pairs of articles?)
+        # 1. Compute similarities between all unique pairs of articles O(n^2)
+        sim = PairsDict()
+        for articleA, articleB in itertools.combinations(network.articles, 2):
+            ratersA = set(network.userArticleGraph.GetNI(articleA).GetOutEdges())
+            ratersB = set(network.userArticleGraph.GetNI(articleB).GetOutEdges())
+            # TODO: make sure that new articles are handled properly here
+            # so that we don't need to do anything special to initialize new
+            # articles -- they should be recommend to new users.
+            # Use Jaccard similarity with correction to prevent divide-by-zero
+            sim[articleA, articleB] = (len(ratersA | ratersB) + 1) / (len(ratersA & ratersB) + 1)
+
+        # 2. Compute k-nearest neighbors to the articles liked by the readers
+        # Collect the set of articles liked by the given readers
+        likedArticles = set(
+            article
+            for reader in readers
+            for article in network.userArticleGraph.GetNI(reader.userId).GetOutEdges()
+        )
+        # For each article find KNNs
+
         # For each reader:
-        #   1. Compute similarity scores with all articles that the reader's friends has liked.
-        #      The similarity score should be based on: the jaccard similarity of the item vectors in the ratings matrix.
-        #      (note that the ratings matrix is a collapsed form of the adjacency matrix which is possible since the graph is bipartite
-        #   2. Return the top N most similar articles
+        for reader in readers:
+            likedArticles = set(network.userArticleGraph.GetNI(reader.userId).GetOutEdges())
+            candidateArticles = list(article for article in network.articles if article not in likedArticles)
+
+            # 2. For each article, compute its k-nearest neighbors in terms of
+            #    similarity among the articles read by the reader
+            knns = {}
+            for article in candidateArticles:
+                knns[article] = heapq.nlargest(likedArticles, lambda other: sim[article, other])
+
+            # 3. Since we are working only with binary ratings (i.e. likes),
+            #    we don't need to "estimate" the rating of the candidate articles,
+            #    since the the k-nearest neighbors are already the recommendations
+            # TODO: limit to just the articles that the reader's friends has liked
+            # TODO: use baseline estimates to de-bias
+            estPLike = {}
+            for article in candidateArticles:
+                estPLike = sum()
+
+
+            # 4. Recommend the articles with the top N estimated ratings for each
+            #    reader.
+
         raise NotImplementedError

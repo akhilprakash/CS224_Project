@@ -7,6 +7,7 @@ import random
 import os
 import collections
 import pdb
+import numpy as np
 
 def getMax(NIdToDistH):
     nodeId = -1
