@@ -15,7 +15,17 @@ class Experiment(object):
     SOURCES = ["New York Times", "Wall Street Journal", "Fox News"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
 
-    def __init__(self, num_iterations=500, all_analyses=True):
+    def __init__(self,
+                 num_iterations=500,
+                 all_analyses=True,
+                 recommender='RandomRecommender'):
+        """
+        Constructor for Experiment.
+
+        :param num_iterations: int number of iterations to run in this experiment.
+        :param all_analyses: True to run all the analyses, False if not
+        :param recommender: string name of the recommender class to use as defined in recommender.py
+        """
         self.num_iterations = num_iterations
         self.all_analyses = all_analyses
         self.articleGenerators = []
@@ -23,7 +33,7 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
-        self.recommender = recommendation.RandomRecommender()
+        self.recommender = vars(recommendation)[recommender]()
         self.metrics = []
         if self.all_analyses:
             self.metrics = [
