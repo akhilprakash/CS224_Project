@@ -24,46 +24,50 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
         self.recommender = recommendation.RandomRecommender()
-        self.metrics = [
-            evaluation.ReadingDistribution(),
-            evaluation.PathsBetweenPoliticalnesses(),
-            evaluation.PathsBetweenPoliticalnesses(-1, 1),
-            evaluation.PathsBetweenPoliticalnesses(-2, -1),
-            evaluation.PathsBetweenPoliticalnesses(1, 2),
-            evaluation.PathsBetweenPoliticalnesses(2, 2),
-            evaluation.PathsBetweenPoliticalnesses(-2, -2),
-            evaluation.UserDegreeDistribution("all"),
-            evaluation.Modularity(),
-            evaluation.ArticleDegreeDistribution("all"),
-            evaluation.ArticleDegreeDistribution("alive"),
-            evaluation.ArticleDegreeDistribution("dead"),
-            evaluation.DistributionOfLifeTime("alive"),
-            evaluation.AliveArticles(),
-            evaluation.DeadArticles(),
-            evaluation.OverallClustering(),
-            evaluation.ClusterPolticalness("-2"),
-            evaluation.ClusterPolticalness("-1"),
-            evaluation.ClusterPolticalness("0"),
-            evaluation.ClusterPolticalness("1"),
-            evaluation.ClusterPolticalness("2"),
-            evaluation.ClusterPolticalness("all"),
-            evaluation.LargestConnectedComponent(),
-            #evaluation.EigenVectors(),
-            #evaluation.MoreEigenVectors(),
-            evaluation.CommonArticles(-2, 2),
-            evaluation.CommonArticles(-1, 2),
-            evaluation.CommonArticles(-2, 1),
-            evaluation.CommonArticles(1,2),
-            evaluation.CommonArticles(2,2),
-            evaluation.CommonArticles(-2, -2),
-            evaluation.Betweenness(),
-            evaluation.ModularityWRTFriends(),
-            evaluation.BetweennessWRTFriends(),
-            evaluation.OverallClusteringWRTFriends(),
-            evaluation.ClusterPolticalnessWRTFriends("all"),
-            #evaluation.EigenVectorsWRTFriends(),
-            #evaluation.MoreEigenVectorsWRTFriends(),
-        ]
+        self.metrics = []
+        if self.all_analyses:
+            self.metrics = [
+                evaluation.ReadingDistribution(),
+                evaluation.PathsBetweenPoliticalnesses(),
+                evaluation.PathsBetweenPoliticalnesses(-1, 1),
+                evaluation.PathsBetweenPoliticalnesses(-2, -1),
+                evaluation.PathsBetweenPoliticalnesses(1, 2),
+                evaluation.PathsBetweenPoliticalnesses(2, 2),
+                evaluation.PathsBetweenPoliticalnesses(-2, -2),
+                evaluation.UserDegreeDistribution("all"),
+                evaluation.Modularity(),
+                evaluation.ArticleDegreeDistribution("all"),
+                evaluation.ArticleDegreeDistribution("alive"),
+                evaluation.ArticleDegreeDistribution("dead"),
+                evaluation.DistributionOfLifeTime("alive"),
+                evaluation.AliveArticles(),
+                evaluation.DeadArticles(),
+                evaluation.OverallClustering(),
+                evaluation.ClusterPolticalness("-2"),
+                evaluation.ClusterPolticalness("-1"),
+                evaluation.ClusterPolticalness("0"),
+                evaluation.ClusterPolticalness("1"),
+                evaluation.ClusterPolticalness("2"),
+                evaluation.ClusterPolticalness("all"),
+                evaluation.LargestConnectedComponent(),
+                #evaluation.EigenVectors(),
+                #evaluation.MoreEigenVectors(),
+                evaluation.CommonArticles(-2, 2),
+                evaluation.CommonArticles(-1, 2),
+                evaluation.CommonArticles(-2, 1),
+                evaluation.CommonArticles(1,2),
+                evaluation.CommonArticles(2,2),
+                evaluation.CommonArticles(-2, -2),
+                evaluation.Betweenness(),
+                evaluation.ModularityWRTFriends(),
+                evaluation.BetweennessWRTFriends(),
+                evaluation.OverallClusteringWRTFriends(),
+                evaluation.ClusterPolticalnessWRTFriends("all"),
+                #evaluation.EigenVectorsWRTFriends(),
+                #evaluation.MoreEigenVectorsWRTFriends(),
+            ]
+        else:
+            self.metrics = [evaluation.ReadingDistribution()]
         self.histories = defaultdict(list)
 
     def createArticle(self):
@@ -193,7 +197,7 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
-    def simulate(self, iterations, all_analyses=True):
+    def simulate(self, iterations):
         readers = self.network.getNextReaders() # get readers that can read at this time point
 
         # Introduce a new article
@@ -232,17 +236,11 @@ class Experiment(object):
         #         probLike = self.PLike(u, article)
         #         if random.random() < probLike:
         #             self.network.addEdge(u, article)
-        self.runAnalysis(iterations, all_analyses)
+        self.runAnalysis(iterations)
 
-    def runAnalysis(self, iterations, all=True):
-        if all:
-            for metric in self.metrics:
-                self.histories[metric].append(metric.measure(self.network, iterations))
-        else:
-            metricsToRun = [evaluation.ReadingDistribution()] #evaluation.Statistics()]
-            for metric in metricsToRun:
-                self.histories[metric].append(metric.measure(self.network, iterations))
-
+    def runAnalysis(self, iterations):
+        for metric in self.metrics:
+            self.histories[metric].append(metric.measure(self.network, iterations))
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
@@ -252,7 +250,7 @@ class Experiment(object):
     
     def runAllSimulation(self):
         for i in util.visual_xrange(self.num_iterations, use_newlines=False):
-            self.simulate(100, self.all_analyses)
+            self.simulate(i)
             # self.triadicClosureBasedOnFriends(i)
             self.killArticles(i)
         #print self.distributionResults
