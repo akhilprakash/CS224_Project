@@ -3,6 +3,9 @@
 import heapq
 import collections
 
+
+# TODO: don't recommend dead articles
+
 class Recommender(object):
     def makeRecommendations(self, network, readers, N=1):
         """
@@ -33,6 +36,7 @@ class PopularRecommender(Recommender):
                                  key=lambda a: network.userArticleGraph.GetNI(a.getArticleId()).GetDeg())
         return {r.getUserId(): popular for r in readers}
 
+
 class RecommendBasedOnFriends(Recommender):
     #reocmmend what is most poopular based on friends
     def makeRecommendations(self, network, readers, N=1):
@@ -55,5 +59,12 @@ class RecommendBasedOnFriends(Recommender):
 
 
 class CollaborativeFiltering(Recommender):
+    """Item-item collaborative filtering"""
     def makeRecommendations(self, network, readers, N=1):
+        # (Compute similarities between all pairs of articles?)
+        # For each reader:
+        #   1. Compute similarity scores with all articles that the reader's friends has liked.
+        #      The similarity score should be based on: the jaccard similarity of the item vectors in the ratings matrix.
+        #      (note that the ratings matrix is a collapsed form of the adjacency matrix which is possible since the graph is bipartite
+        #   2. Return the top N most similar articles
         raise NotImplementedError

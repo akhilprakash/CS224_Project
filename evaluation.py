@@ -80,12 +80,14 @@ class ReadingDistribution(Metric):
     """
     def measure(self, network, iterations):
         userArticleGraph = network.userArticleGraph
+        numUsersWithPolticalness = collections.defaultdict(int)
         distribution = {}
         for user in network.users.itervalues():
             nodeUserId = user.getUserId()
             userPolticalness = user.getPoliticalness()
             for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
                 articlePoliticalness = network.getArticle(article).getPoliticalness()
+                numUsersWithPolticalness[userPolticalness] = numUsersWithPolticalness[userPolticalness] + 1
                 if userPolticalness in distribution:
                     innerDict = distribution[userPolticalness]
                     if articlePoliticalness in innerDict:
@@ -94,10 +96,10 @@ class ReadingDistribution(Metric):
                         innerDict[articlePoliticalness] = 1
                 else:
                     distribution[userPolticalness] = {articlePoliticalness: 1}
-        return distribution
+        return [distribution, numUsersWithPolticalness]
 
     def plot(self, history):
-        last = history[-1]
+        last = history[-1][0]
         for key, value in last.items():
             #value is a dictionary
             keys = []
@@ -113,6 +115,26 @@ class ReadingDistribution(Metric):
             plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
             #make this a mosaic plot later
             plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
+            plt.close()
+        numUsersWithPolticalness = history[-1][1]
+        for key, value in last.items():
+            #value is a dictionary
+            keys = []
+            vals = []
+            for k1, v1 in value.items():
+                keys.append(k1)
+                if numUsersWithPolticalness[k1] != 0:
+                    vals.append(v1 / (1.0 * numUsersWithPolticalness[k1]))
+                else:
+                    vals.append(0)
+            print self.name
+            plt.figure()
+            plt.bar(keys, vals, color = "blue")
+            plt.xlabel("Article Politicalness")
+            plt.ylabel("Frequency Normalized bby number of users")
+            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            #make this a mosaic plot later
+            plt.savefig(out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
             plt.close()
 
     def save(self, history):
@@ -298,7 +320,7 @@ class Betweenness(Metric):
                 elif NI in network.articles:
                     polticalness = network.articles[NI].getPoliticalness()
                 else:
-                    print "error"
+                    raise Exception("Should not reach here")
                 dictionary[polticalness] = dictionary[polticalness] + 1
             values.append(dictionary)
         return [betweenessCentr, values]
@@ -366,7 +388,7 @@ class BetweennessWRTFriends(Betweenness):
                 elif NI in network.articles:
                     polticalness = network.articles[NI].getPoliticalness()
                 else:
-                    print "error"
+                    raise Exception("Should not reach here")
                 dictionary[polticalness] = dictionary[polticalness] + 1
             values.append(dictionary)
         return [betweenessCentr, values]
@@ -705,20 +727,7 @@ class EigenVectors(Metric):
 
 '''
 def getEigenVectorEigenValue(network, graph, iterations):
-    counter = 0
-    uIdOrAIdToMatrix = {}
-    for uId, user in network.users.items():
-        uIdOrAIdToMatrix[uId] = counter
-        counter = counter + 1
-    for aId, article in network.articles.items():
-        uIdOrAIdToMatrix[aId] = counter
-        counter = counter + 1
-    matrix = [[0 for _ in range(0, counter)] for _ in range(0, counter)]
-    for edges in graph.Edges():
-        src = edges.GetSrcNId()
-        dest = edges.GetDstNId()
-        matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
-        matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
+    matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)
 
     matrixIdPolticalness = []
     for uId, user in network.users.items():

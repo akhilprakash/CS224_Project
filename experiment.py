@@ -8,10 +8,11 @@ from util import print_error, data_path, out_path
 from collections import defaultdict
 from itertools import izip
 import pdb
+import csv
 
 class Experiment(object):
 
-    SOURCES = ["NYTimes", "WSJ", "Fox"]
+    SOURCES = ["New York Times", "Wall Street Journal", "Fox News"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
     NUM_SIMULATIONS = 500
 
@@ -69,6 +70,25 @@ class Experiment(object):
         articleGen = self.articleGenerators[idx]
         return articleGen.createArticle()
 
+    def PLikeBaseOnData(self, reader, article):
+        data = []
+        with open(data_path("percof-readers-trust.csv")) as f:
+            csvreader = csv.reader(f, delimiter=",")
+            for row in csvreader:
+                oneRow = []
+                for col in row:
+                    oneRow.append(col)
+                data.append(oneRow)
+
+        userPolticalness = reader.getPoliticalness()
+        userPolticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
+        source = article.getSource()
+        for row in data:
+            if row[0] == source:
+                colIndex = userPolticalnessToDataIndex[userPolticalness]
+                return row[0][colIndex]
+        raise Exception("Invalid Article Source")
+
     def PLikeBySource(self, reader, article):
         if reader.getPoliticalness() < 0 and article.getSource() == self.SOURCES[2]:
             return .9
@@ -93,7 +113,7 @@ class Experiment(object):
         self.network.addArticle(article)
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.PLikeBySource(self.network.users[reader], article)
+            probLike = self.PLikeBaseOnData(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
                 self.network.addEdge(self.network.users[reader], article)
@@ -106,14 +126,14 @@ class Experiment(object):
                 if force:
                     self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
                 else:
-                    if self.PLikeBySource(self.network.getUser(randNeighbor[0]), article) < random.random():
+                    if self.PLikeBaseOnData(self.network.getUser(randNeighbor[0]), article) < random.random():
                         self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
         readers = self.network.users.values()
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.PLikeBySource(reader, recommendedArticle):
+                if random.random() < self.PLikeBaseOnData(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
         #self.help0DegreeUsers(iterations, article)
         #self.help0DegreeArticles(iterations, self.network.users.values())

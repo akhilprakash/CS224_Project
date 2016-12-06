@@ -35,6 +35,23 @@ class Network(object):
         #self.initializeUsers()
         self.intializeUsersAccordingToFriends()
 
+    def calcAdjacencyMatrix(self, graph):
+        counter = 0
+        uIdOrAIdToMatrix = {}
+        for uId, user in self.users.items():
+            uIdOrAIdToMatrix[uId] = counter
+            counter = counter + 1
+        for aId, article in self.articles.items():
+            uIdOrAIdToMatrix[aId] = counter
+            counter = counter + 1
+        matrix = [[0 for _ in range(0, counter)] for _ in range(0, counter)]
+        for edges in graph.Edges():
+            src = edges.GetSrcNId()
+            dest = edges.GetDstNId()
+            matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
+            matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
+        return (matrix, uIdOrAIdToMatrix)
+
     def addArticle(self, article):
         article.setArticleId(self.articleIdCounter)
         self.articleIdCounter += 1
