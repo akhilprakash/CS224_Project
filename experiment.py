@@ -217,19 +217,23 @@ class Experiment(object):
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         # self.forceConnectedGraph(iterations, article)
+
+        '''
         for reader in readers:  # ask each reader if like it or not
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
+        '''
 
         # Compute recommendations and "show" them to users
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.PLike(reader, recommendedArticle):
+                if random.random() < self.PLikeBaseOnData(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
 
+        '''
         # On every third iteration, "show" the readers the top 5 most popular articles
         if iterations % 3 == 0:
             articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
@@ -241,7 +245,7 @@ class Experiment(object):
                     probLike = self.PLike(reader, article)
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
-
+        '''
         self.runAnalysis(iterations)
 
 
@@ -252,20 +256,23 @@ class Experiment(object):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
-        #self.forceConnectedGraph(iterations, article)
+
+        '''
         for reader in readers: # ask each reader if like it or not
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
+        '''
 
         # Compute recommendations and "show" them to users
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.PLike(reader, recommendedArticle):
+                if random.random() < self.PLikeBaseOnData(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
 
+        '''
         # On every third iteration, "show" the readers the top 5 most popular articles
         if iterations % 3 == 0:
             articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
@@ -277,6 +284,7 @@ class Experiment(object):
                     probLike = self.PLike(reader, article)
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
+        '''
 
         # if iterations % 5 == 0:
         #     users = self.network.getUsersWithDegree0()
@@ -330,7 +338,7 @@ def runExperiment(*args, **kwargs):
 
     Usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(all_analyses=False, num_iterations=10, simulation="recc")
+        >>> experiment.runExperiment(all_analyses=False, num_iterations=10, simulation="recc", recommender='RandomRecommender')
     """
     exp = Experiment(*args, **kwargs)
     exp.runAllSimulation()
