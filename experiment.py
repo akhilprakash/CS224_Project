@@ -18,6 +18,7 @@ class Experiment(object):
     def __init__(self,
                  num_iterations=500,
                  all_analyses=True,
+                 simulation="simulate",
                  recommender='RandomRecommender'):
         """
         Constructor for Experiment.
@@ -28,6 +29,7 @@ class Experiment(object):
         """
         self.num_iterations = num_iterations
         self.all_analyses = all_analyses
+        self.simulation = simulation
         self.articleGenerators = []
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.1, .3, 0, .3, .1]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
@@ -207,6 +209,42 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
+    def recc_system_simulate(self, iterations):
+        readers = self.network.getNextReaders()  # get readers that can read at this time point
+
+        # Introduce a new article
+        article = self.createArticle()
+        article.incrementTimeToLive(iterations)
+        self.network.addArticle(article)
+        # self.forceConnectedGraph(iterations, article)
+        for reader in readers:  # ask each reader if like it or not
+            probLike = self.PLike(reader, article)
+            if random.random() < probLike:
+                self.network.addEdge(reader, article)
+
+        # Compute recommendations and "show" them to users
+        allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
+        for readerId, recs in allRecs.iteritems():
+            reader = self.network.getUser(readerId)
+            for recommendedArticle in recs:
+                if random.random() < self.PLike(reader, recommendedArticle):
+                    self.network.addEdge(reader, recommendedArticle)
+
+        # On every third iteration, "show" the readers the top 5 most popular articles
+        if iterations % 3 == 0:
+            articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
+            sortedDeg = sorted(articleDeg, key=lambda x: x[1], reverse=True)
+            topFive = sortedDeg[0:5]
+            for (aId, _) in topFive:
+                article = self.network.getArticle(aId)
+                for reader in readers:
+                    probLike = self.PLike(reader, article)
+                    if random.random() < probLike:
+                        self.network.addEdge(reader, article)
+
+        self.runAnalysis(iterations)
+
+
     def simulate(self, iterations):
         readers = self.network.getNextReaders() # get readers that can read at this time point
 
@@ -260,8 +298,12 @@ class Experiment(object):
     
     def runAllSimulation(self):
         for i in util.visual_xrange(self.num_iterations, use_newlines=False):
-            self.simulate(i)
-            # self.triadicClosureBasedOnFriends(i)
+            if self.simulation == "simulate":
+                self.simulate(i)
+            elif self.simulation == "triadicClosure":
+                self.triadicClosureBasedOnFriends(i)
+            elif self.simulation == "recc":
+                self.recc_system_simulate(i)
             self.killArticles(i)
         #print self.distributionResults
 
@@ -288,7 +330,7 @@ def runExperiment(*args, **kwargs):
 
     Usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(all_analyses=False, num_iterations=10)
+        >>> experiment.runExperiment(all_analyses=False, num_iterations=10, simulation="recc")
     """
     exp = Experiment(*args, **kwargs)
     exp.runAllSimulation()
