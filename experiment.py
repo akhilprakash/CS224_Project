@@ -10,6 +10,43 @@ from itertools import izip
 import pdb
 import csv
 
+def PLikeBaseOnData(reader, article):
+    data = []
+    with open(data_path("percof-readers-trust.csv")) as f:
+        csvreader = csv.reader(f, delimiter=",")
+        for row in csvreader:
+            oneRow = []
+            for col in row:
+                oneRow.append(col)
+            data.append(oneRow)
+
+    userPolticalness = reader.getPoliticalness()
+    userPolticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
+    source = article.getSource()
+    for row in data:
+        if row[0] == source:
+            colIndex = userPolticalnessToDataIndex[userPolticalness]
+            return row[0][colIndex]
+    raise Exception("Invalid Article Source")
+
+def PLikeBySource(reader, article):
+    if reader.getPoliticalness() < 0 and article.getSource() == self.SOURCES[2]:
+        return .9
+    if reader.getPoliticalness() == 0 and article.getSource() == self.SOURCES[1]:
+        return .8
+    return self.PLike(reader, article)
+
+def PLike(reader, article):
+    diff = abs(reader.getPoliticalness() - article.getPoliticalness())
+    diffToProb = {
+        0: .6,
+        1: .4,
+        2: .2,
+        3: .1,
+        4: .1,
+    }
+    return diffToProb[diff]
+
 class Experiment(object):
 
     SOURCES = ["New York Times", "Wall Street Journal", "Fox News"]
@@ -81,50 +118,13 @@ class Experiment(object):
         articleGen = self.articleGenerators[idx]
         return articleGen.createArticle()
 
-    def PLikeBaseOnData(self, reader, article):
-        data = []
-        with open(data_path("percof-readers-trust.csv")) as f:
-            csvreader = csv.reader(f, delimiter=",")
-            for row in csvreader:
-                oneRow = []
-                for col in row:
-                    oneRow.append(col)
-                data.append(oneRow)
-
-        userPolticalness = reader.getPoliticalness()
-        userPolticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
-        source = article.getSource()
-        for row in data:
-            if row[0] == source:
-                colIndex = userPolticalnessToDataIndex[userPolticalness]
-                return row[0][colIndex]
-        raise Exception("Invalid Article Source")
-
-    def PLikeBySource(self, reader, article):
-        if reader.getPoliticalness() < 0 and article.getSource() == self.SOURCES[2]:
-            return .9
-        if reader.getPoliticalness() == 0 and article.getSource() == self.SOURCES[1]:
-            return .8
-        return self.PLike(reader, article)
-
-    def PLike(self, reader, article):
-        diff = abs(reader.getPoliticalness() - article.getPoliticalness())
-        diffToProb = {
-            0: .6,
-            1: .4,
-            2: .2,
-            3: .1,
-            4: .1,
-        }
-        return diffToProb[diff]
-
-    def triadicClosureBasedOnFriends(self, iterations, force = True, plike = pLike):
+    def triadicClosureBasedOnFriends(self, iterations, force = True, plike = PLike):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.plike(self.network.users[reader], article)
+            probLike = plike(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
                 self.network.addEdge(self.network.users[reader], article)
@@ -137,14 +137,14 @@ class Experiment(object):
                 if force:
                     self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
                 else:
-                    if self.plike(self.network.getUser(randNeighbor[0]), article) < random.random():
+                    if plike(self.network.getUser(randNeighbor[0]), article) < random.random():
                         self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
         readers = self.network.users.values()
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.plike(reader, recommendedArticle):
+                if random.random() < plike(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
         #self.help0DegreeUsers(iterations, article)
         #self.help0DegreeArticles(iterations, self.network.users.values())
@@ -157,7 +157,7 @@ class Experiment(object):
         self.network.addArticle(article)
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.plike(self.network.users[reader], article)
+            probLike = plike(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
                 self.network.addEdge(self.network.users[reader], article)
@@ -179,20 +179,20 @@ class Experiment(object):
         
         self.runAnalysis(iterations)
 
-    def help0DegreeUsers(self, iterations, article, N=5):
+    def help0DegreeUsers(self, iterations, article, plike, N=5):
         if iterations % N == 0:
             users = self.network.getUsersWithDegree0()
             for u in users:
-                probLike = self.PLike(u, article)
+                probLike = plike(u, article)
                 if random.random() < probLike:
                     self.network.addEdge(u, article)
 
-    def help0DegreeArticles(self, iterations, users, N=4):
+    def help0DegreeArticles(self, iterations, users, plike, N=4):
         if iterations % N == 0:
             articles = self.network.getArticlesWithDegree0()
             for a in articles:
                 for u in users:
-                    probLike = self.PLike(u, a)
+                    probLike = plike(u, a)
                     if random.random() < probLike:
                         self.network.addEdge(u, a)
 
@@ -203,7 +203,7 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
-    def simulate(self, iterations, all_analyses=True, plike=pLike):
+    def simulate(self, iterations, all_analyses=True, plike=PLike):
         readers = self.network.getNextReaders() # get readers that can read at this time point
 
         # Introduce a new article
@@ -212,7 +212,7 @@ class Experiment(object):
         self.network.addArticle(article)
         #self.forceConnectedGraph(iterations, article)
         for reader in readers: # ask each reader if like it or not
-            probLike = self.plike(reader, article)
+            probLike = plike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
 
@@ -221,7 +221,7 @@ class Experiment(object):
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.plike(reader, recommendedArticle):
+                if random.random() < plike(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
 
         # On every third iteration, "show" the readers the top 5 most popular articles
@@ -232,7 +232,7 @@ class Experiment(object):
             for (aId, _) in topFive:
                 article = self.network.getArticle(aId)
                 for reader in readers:
-                    probLike = self.plike(reader, article)
+                    probLike = plike(reader, article)
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
 

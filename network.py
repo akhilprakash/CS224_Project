@@ -8,6 +8,15 @@ import os
 import collections
 import pdb
 
+def getMax(NIdToDistH):
+    nodeId = -1
+    longestPath = -1
+    for item in NIdToDistH:
+        if NIdToDistH[item] > longestPath:
+            longestPath = NIdToDistH[item]
+            nodeId = item
+    return (item, longestPath)
+
 class Network(object):
 
     ALPHA = .8
@@ -33,7 +42,69 @@ class Network(object):
         self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "zacharys.csv"), 0, 1, ",")
         #snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
         #self.initializeUsers()
-        self.intializeUsersAccordingToFriends()
+        self.initializeUsersBasedOn2Neg2()
+
+    def spreadPolticalness(self, nodeId, depth):
+        poltical = self.users[nodeId].getPoliticalness()
+        for newNode in self.friendGraph.GetNI(nodeId).GetOutEdges():
+            #either pass on poltical, poltical - 1, oor poltial + 1
+            weights = [.3 + depth, .5 + depth, .3 + depth]
+            idx = util.generatePoliticalness(weights)
+            if poltical == 2 or poltical == -2:
+                weights = [.5 + depth, .5 + depth]
+                idx = util.generatePoliticalness(weights)
+                if idx == 0:
+                    self.users[newNode].setPoliticalness(poltical)
+                else:
+                    self.users[newNode].setPoliticalness(poltical - poltical / 2)
+            else:
+                if idx == 0:
+                    self.users[newNode].setPoliticalness(poltical-1)
+                elif idx == 1:
+                    self.users[newNode].setPoliticalness(poltical)
+                else:
+                    self.users[newNode].setPoliticalness(poltical+1)
+        return [v for v in self.friendGraph.GetNI(nodeId).GetOutEdges()]
+
+    def areUsersUnassigned(self):
+        for user in self.users.itervalues():
+            if user.getPoliticalness() == "NA":
+                return True
+        return False
+
+    #find the two nodes furthest from each other in the friends graph
+    #assign them -2 and 2
+    #then porpaorpagte values
+    def initializeUsersBasedOn2Neg2(self):
+        for node in self.friendGraph.Nodes():
+            user = User("NA", node.GetId())
+            self.addUser(user)
+
+        sourceId = -1
+        destId = -1
+        longestPath = -1
+        for source in self.friendGraph.Nodes():
+            NIdToDistH = snap.TIntH()
+            snap.GetShortPath(self.friendGraph, source.GetId(), NIdToDistH)
+            result = getMax(NIdToDistH)
+            if result[1] > longestPath:
+                sourceId = source.GetId()
+                destId = result[0]
+
+        #arbitrarly assign source ot -2 and dest to 2
+        self.users[sourceId].setPoliticalness(-2)
+        self.users[destId].setPoliticalness(2)
+        fromSourceQueue = self.spreadPolticalness(sourceId, 0)
+        fromDestQueue = self.spreadPolticalness(destId, 0)
+        depth = 1
+        while self.areUsersUnassigned():
+            source = fromSourceQueue.pop(0)
+            fromSourceQueue.extend(self.spreadPolticalness(source, depth))
+            dest = fromDestQueue.pop(0)
+            fromDestQueue.extend(self.spreadPolticalness(dest, depth))
+            depth = depth + 1
+        self.getPolticalAllUsers()
+
 
     def calcAdjacencyMatrix(self, graph):
         counter = 0
@@ -84,13 +155,17 @@ class Network(object):
             user = User(polticalness, node.GetId())
             self.addUser(user)
 
-    def intializeUsersAccordingToFriends(self):
-        #intilaize users randomly
-        self.initializeUsers()
+    def getPolticalAllUsers(self):
         poltical = []
         for user in self.users.values():
             poltical.append(user.getPoliticalness())
         print poltical
+        return poltical
+
+    def intializeUsersAccordingToFriends(self):
+        #intilaize users randomly
+        self.initializeUsers()
+        self.getPolticalAllUsers()
         NUM_ITERATIONS = 1
         for _ in range(0, NUM_ITERATIONS):
             keys = self.users.keys()
@@ -106,10 +181,7 @@ class Network(object):
                 if potlicalnessOfFriends[idx] == 0:
                     pdb.set_trace()
                 user.setPoliticalness(idx -2)
-        poltical = []
-        for user in self.users.values():
-            poltical.append(user.getPoliticalness())
-        print poltical
+        self.getPolticalAllUsers()
 
 
 
