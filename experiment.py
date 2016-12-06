@@ -8,14 +8,16 @@ from util import print_error, data_path, out_path
 from collections import defaultdict
 from itertools import izip
 import pdb
+import csv
 
 class Experiment(object):
 
-    SOURCES = ["NYTimes", "WSJ", "Fox"]
+    SOURCES = ["New York Times", "Wall Street Journal", "Fox News"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
 
-    def __init__(self, num_simulations=500):
-        self.num_simulations = num_simulations
+    def __init__(self, num_iterations=500, all_analyses=True):
+        self.num_iterations = num_iterations
+        self.all_analyses = all_analyses
         self.articleGenerators = []
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.1, .3, 0, .3, .1]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
@@ -46,8 +48,8 @@ class Experiment(object):
             evaluation.ClusterPolticalness("2"),
             evaluation.ClusterPolticalness("all"),
             evaluation.LargestConnectedComponent(),
-            evaluation.EigenVectors(),
-            evaluation.MoreEigenVectors(),
+            #evaluation.EigenVectors(),
+            #evaluation.MoreEigenVectors(),
             evaluation.CommonArticles(-2, 2),
             evaluation.CommonArticles(-1, 2),
             evaluation.CommonArticles(-2, 1),
@@ -59,8 +61,8 @@ class Experiment(object):
             evaluation.BetweennessWRTFriends(),
             evaluation.OverallClusteringWRTFriends(),
             evaluation.ClusterPolticalnessWRTFriends("all"),
-            evaluation.EigenVectorsWRTFriends(),
-            evaluation.MoreEigenVectorsWRTFriends(),
+            #evaluation.EigenVectorsWRTFriends(),
+            #evaluation.MoreEigenVectorsWRTFriends(),
         ]
         self.histories = defaultdict(list)
 
@@ -68,6 +70,25 @@ class Experiment(object):
         idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
         articleGen = self.articleGenerators[idx]
         return articleGen.createArticle()
+
+    def PLikeBaseOnData(self, reader, article):
+        data = []
+        with open(data_path("percof-readers-trust.csv")) as f:
+            csvreader = csv.reader(f, delimiter=",")
+            for row in csvreader:
+                oneRow = []
+                for col in row:
+                    oneRow.append(col)
+                data.append(oneRow)
+
+        userPolticalness = reader.getPoliticalness()
+        userPolticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
+        source = article.getSource()
+        for row in data:
+            if row[0] == source:
+                colIndex = userPolticalnessToDataIndex[userPolticalness]
+                return row[0][colIndex]
+        raise Exception("Invalid Article Source")
 
     def PLikeBySource(self, reader, article):
         if reader.getPoliticalness() < 0 and article.getSource() == self.SOURCES[2]:
@@ -93,7 +114,7 @@ class Experiment(object):
         self.network.addArticle(article)
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.PLikeBySource(self.network.users[reader], article)
+            probLike = self.PLikeBaseOnData(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
                 self.network.addEdge(self.network.users[reader], article)
@@ -106,14 +127,14 @@ class Experiment(object):
                 if force:
                     self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
                 else:
-                    if self.PLikeBySource(self.network.getUser(randNeighbor[0]), article) < random.random():
+                    if self.PLikeBaseOnData(self.network.getUser(randNeighbor[0]), article) < random.random():
                         self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
         readers = self.network.users.values()
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.PLikeBySource(reader, recommendedArticle):
+                if random.random() < self.PLikeBaseOnData(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
         #self.help0DegreeUsers(iterations, article)
         #self.help0DegreeArticles(iterations, self.network.users.values())
@@ -172,15 +193,15 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
-    def simulate(self, iterations):
-        readers = self.network.getNextReaders()
+    def simulate(self, iterations, all_analyses=True):
+        readers = self.network.getNextReaders() # get readers that can read at this time point
 
         # Introduce a new article
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         #self.forceConnectedGraph(iterations, article)
-        for reader in readers:
+        for reader in readers: # ask each reader if like it or not
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
@@ -211,11 +232,17 @@ class Experiment(object):
         #         probLike = self.PLike(u, article)
         #         if random.random() < probLike:
         #             self.network.addEdge(u, article)
-        self.runAnalysis(iterations)
+        self.runAnalysis(iterations, all_analyses)
 
-    def runAnalysis(self, iterations):
-        for metric in self.metrics:
-            self.histories[metric].append(metric.measure(self.network, iterations))
+    def runAnalysis(self, iterations, all=True):
+        if all:
+            for metric in self.metrics:
+                self.histories[metric].append(metric.measure(self.network, iterations))
+        else:
+            metricsToRun = [evaluation.ReadingDistribution()] #evaluation.Statistics()]
+            for metric in metricsToRun:
+                self.histories[metric].append(metric.measure(self.network, iterations))
+
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
@@ -224,8 +251,9 @@ class Experiment(object):
                 article.setIsDead(True)
     
     def runAllSimulation(self):
-        for i in util.visual_xrange(self.num_simulations, use_newlines=False):
-            self.triadicClosureBasedOnFriends(i)
+        for i in util.visual_xrange(self.num_iterations, use_newlines=False):
+            self.simulate(100, self.all_analyses)
+            # self.triadicClosureBasedOnFriends(i)
             self.killArticles(i)
         #print self.distributionResults
 
@@ -252,7 +280,7 @@ def runExperiment(*args, **kwargs):
 
     Usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(num_simulations=10)
+        >>> experiment.runExperiment(all_analyses=False, num_iterations=10)
     """
     exp = Experiment(*args, **kwargs)
     exp.runAllSimulation()

@@ -83,14 +83,14 @@ def data_path(filename):
 now = time.strftime("%c")
 def out_path(filename, subfolder=""):
     if subfolder == "":
-        if not os.path.exists('out ' + str(now)):
+        if not os.path.exists('out ' + str(now).replace(":", "")):
             print_error('Created `out` directory for result files.')
-            os.mkdir('out ' + str(now))
+            os.mkdir('out ' + str(now).replace(":", ""))
 
-        return os.path.join('out ' + str(now), filename)
+        return os.path.join('out ' + str(now).replace(":", ""), filename)
     else:
-        if not os.path.exists('out ' + str(now) + "/" + subfolder):
+        if not os.path.exists('out ' + str(now).replace(":", "") + "/" + subfolder):
             print_error('Created out' + subfolder +' directory for result files.')
-            os.makedirs('out ' + str(now)+ "/" + subfolder)
+            os.makedirs('out ' + str(now).replace(":", "")+ "/" + subfolder)
 
-        return os.path.join('out ' + str(now)+ "/" + subfolder, filename)
+        return os.path.join('out ' + str(now).replace(":", "")+ "/" + subfolder, filename)
