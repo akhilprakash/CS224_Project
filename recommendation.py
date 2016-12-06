@@ -28,7 +28,11 @@ class RandomRecommender(Recommender):
 class PopularRecommender(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         # Every is recommended the same most popular articles
-        popular = heapq.nlargest(N, network.articles.itervalues(),
+        articles = []
+        for a in network.articles.itervalues():
+            if not a.getIsDead():
+                articles.append(a)
+        popular = heapq.nlargest(N, articles,
                                  key=lambda a: network.userArticleGraph.GetNI(a.getArticleId()).GetDeg())
         return {r.getUserId(): popular for r in readers}
 
@@ -43,7 +47,8 @@ class RecommendBasedOnFriends(Recommender):
             for friend in friendsOfR:
                 articleIds = network.articlesReadByUser(friend)
                 for aId in articleIds:
-                    articles[aId] = articles[aId] + 1
+                    if not network.articles[aId].getIsDead():
+                        articles[aId] = articles[aId] + 1
             sort = sorted(articles.items(), key = lambda x: x[1], reverse = True)
             recommend = sort[0:min(len(sort), N)]
             article = []
