@@ -108,13 +108,13 @@ class Experiment(object):
         }
         return diffToProb[diff]
 
-    def triadicClosureBasedOnFriends(self, iterations, force = True):
+    def triadicClosureBasedOnFriends(self, iterations, force = True, plike = pLike):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.PLikeBaseOnData(self.network.users[reader], article)
+            probLike = self.plike(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
                 self.network.addEdge(self.network.users[reader], article)
@@ -127,27 +127,27 @@ class Experiment(object):
                 if force:
                     self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
                 else:
-                    if self.PLikeBaseOnData(self.network.getUser(randNeighbor[0]), article) < random.random():
+                    if self.plike(self.network.getUser(randNeighbor[0]), article) < random.random():
                         self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
         readers = self.network.users.values()
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.PLikeBaseOnData(reader, recommendedArticle):
+                if random.random() < self.plike(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
         #self.help0DegreeUsers(iterations, article)
         #self.help0DegreeArticles(iterations, self.network.users.values())
         self.runAnalysis(iterations)
 
 
-    def randomRandomCompleteTriangles(self, iterations):
+    def randomRandomCompleteTriangles(self, iterations, plike=PLike):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
-            probLike = self.PLike(self.network.users[reader], article)
+            probLike = self.plike(self.network.users[reader], article)
             rand = random.random()
             if rand < probLike:
                 self.network.addEdge(self.network.users[reader], article)
@@ -193,7 +193,7 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
-    def simulate(self, iterations, all_analyses=True):
+    def simulate(self, iterations, all_analyses=True, plike=pLike):
         readers = self.network.getNextReaders() # get readers that can read at this time point
 
         # Introduce a new article
@@ -202,7 +202,7 @@ class Experiment(object):
         self.network.addArticle(article)
         #self.forceConnectedGraph(iterations, article)
         for reader in readers: # ask each reader if like it or not
-            probLike = self.PLike(reader, article)
+            probLike = self.plike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
 
@@ -211,7 +211,7 @@ class Experiment(object):
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.PLike(reader, recommendedArticle):
+                if random.random() < self.plike(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
 
         # On every third iteration, "show" the readers the top 5 most popular articles
@@ -222,7 +222,7 @@ class Experiment(object):
             for (aId, _) in topFive:
                 article = self.network.getArticle(aId)
                 for reader in readers:
-                    probLike = self.PLike(reader, article)
+                    probLike = self.plike(reader, article)
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
 
@@ -252,7 +252,7 @@ class Experiment(object):
     
     def runAllSimulation(self):
         for i in util.visual_xrange(self.num_iterations, use_newlines=False):
-            self.simulate(100, self.all_analyses)
+            self.simulate(i, self.all_analyses)
             # self.triadicClosureBasedOnFriends(i)
             self.killArticles(i)
         #print self.distributionResults
