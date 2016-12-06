@@ -131,7 +131,11 @@ class Network(object):
         return readers
 
     def getRandomArticles(self, N):
-        return [self.articles[a] for a in random.sample(self.articles, N)]
+        aIds = []
+        for a in self.articles.keys():
+            if not self.articles[a].getIsDead():
+                aIds.append(a)
+        return [self.articles[a] for a in random.sample(aIds, N)]
 
     def getUser(self, userId):
         return self.users[userId]
