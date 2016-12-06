@@ -1,7 +1,7 @@
 """Recommendation Engines
 """
 import heapq
-
+import collections
 
 class Recommender(object):
     def makeRecommendations(self, network, readers, N=1):
@@ -28,6 +28,25 @@ class PopularRecommender(Recommender):
         popular = heapq.nlargest(N, network.articles.itervalues(),
                                  key=lambda a: network.userArticleGraph.GetNI(a.getArticleId()).GetDeg())
         return {r.getUserId(): popular for r in readers}
+
+class RecommendBasedOnFriends(Recommender):
+    #reocmmend what is most poopular based on friends
+    def makeRecommendations(self, network, readers, N=1):
+        recommendation = {}
+        for r in readers:
+            friendsOfR = network.friendGraph.GetNI(r.getUserId()).GetOutEdges()
+            articles = collections.defaultdict(int)
+            for friend in friendsOfR:
+                articleIds = network.articlesReadByUser(friend)
+                for aId in articleIds:
+                    articles[aId] = articles[aId] + 1
+            sort = sorted(articles.items(), key = lambda x: x[1], reverse = True)
+            recommend = sort[0:min(len(sort), N)]
+            article = []
+            for aid, _ in recommend:
+                article.append(network.getArticle(aid))
+            recommendation[r.getUserId()] = article
+        return recommendation
 
 
 class CollaborativeFiltering(Recommender):

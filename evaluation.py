@@ -222,6 +222,31 @@ class Modularity(Metric):
     def save(self, history):
         util.writeCSV(out_path("modularity"), history)
 
+class ModularityWRTFriends(Metric):
+    def measure(self, network, iterations):
+        result = []
+        for idx, i in enumerate(range(-2, 3)):
+            ids = network.getUserIdsWithSpecificPoliticalness(i)
+            Nodes = snap.TIntV()
+            for ni in ids:
+                Nodes.Add(ni)
+            result.append(snap.GetModularity(network.userArticleFriendGraph, Nodes))
+
+        return result
+
+    def plot(self, history):
+        for idx, i in enumerate(range(-2, 3)):
+            print self.name
+            plt.figure()
+            oneCluster = map(lambda x:x[idx], history)
+            plt.plot(oneCluster)
+            plt.savefig(out_path(self.safe_name + 'polticalness' + str(i) + '.png', "Modularity"))
+            plt.close()
+
+    def save(self, history):
+        util.writeCSV(out_path("modularity"), history)
+
+
 def copyGraph(graph):
     copyGraph = snap.TUNGraph.New()
     for node in graph.Nodes():
@@ -230,14 +255,13 @@ def copyGraph(graph):
         copyGraph.AddEdge(edge.GetSrcNId(), edge.GetDstNId())
     return copyGraph
 
+
 class Betweenness(Metric):
 
     def measure(self, network, iterations):
         Nodes = snap.TIntFltH()
         Edges = snap.TIntPrFltH()
         snap.GetBetweennessCentr(network.userArticleGraph, Nodes, Edges, 1.0)
-        for node in Nodes:
-            print "node: %d centrality: %f" % (node, Nodes[node])
         # for edge in Edges:
         #   		print "edge: (%d, %d) centrality: %f" % (edge.GetVal1(), edge.GetVal2(), Edges[edge])
 
@@ -250,12 +274,11 @@ class Betweenness(Metric):
         snap.GetWccs(copyOfGraph, components)
         numEdgesRemoved = 0
 
-        while len(components) != 5 and numEdgesRemoved < min(20, len(betweenessCentr)):
+        while len(components) != 5 and numEdgesRemoved < min(30, len(betweenessCentr)):
             copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
             components = snap.TCnComV()
             snap.GetWccs(copyOfGraph, components)
             numEdgesRemoved = numEdgesRemoved + 1
-            print "numEdges removed = " + str(numEdgesRemoved)
         components = snap.TCnComV()
         snap.GetWccs(copyOfGraph, components)
         values = []
@@ -303,6 +326,44 @@ class Betweenness(Metric):
 
     def save(self, history):
         util.writeCSV(out_path("modularity2"), history)
+
+class BetweennessWRTFriends(Betweenness):
+    def measure(self, network, iterations):
+        Nodes = snap.TIntFltH()
+        Edges = snap.TIntPrFltH()
+        snap.GetBetweennessCentr(network.userArticleFriendGraph, Nodes, Edges, 1.0)
+
+        betweenessCentr = []
+        for edge in Edges:
+            betweenessCentr.append((edge, Edges[edge]))
+        betweenessCentr.sort(key = lambda x: x[1], reverse = True)
+        copyOfGraph = copyGraph(network.userArticleGraph)
+        components = snap.TCnComV()
+        snap.GetWccs(copyOfGraph, components)
+        numEdgesRemoved = 0
+
+        while len(components) != 5 and numEdgesRemoved < min(30, len(betweenessCentr)):
+            copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
+            components = snap.TCnComV()
+            snap.GetWccs(copyOfGraph, components)
+            numEdgesRemoved = numEdgesRemoved + 1
+        components = snap.TCnComV()
+        snap.GetWccs(copyOfGraph, components)
+        values = []
+        for CnCom in components:
+            dictionary = collections.defaultdict(int)
+            for NI in CnCom:
+                polticalness = 0
+                if NI in network.users:
+                    polticalness = network.users[NI].getPoliticalness()
+                elif NI in network.articles:
+                    polticalness = network.articles[NI].getPoliticalness()
+                else:
+                    print "error"
+                dictionary[polticalness] = dictionary[polticalness] + 1
+            values.append(dictionary)
+        return [betweenessCentr, values]
+
 
 class UserDegreeDistribution(Metric):
     def __init__(self, politicalness="all"):
@@ -457,7 +518,12 @@ class OverallClustering(Metric):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("OverallClustering"), history)
+        util.writeCSV(out_path("OverallClustering" + self.name), history)
+
+class OverallClusteringWRTFriends(OverallClustering):
+    def measure(self, network, iterations):
+        #printGraph(network.userArticleGraph)
+        return snap.GetClustCf(network.userArticleFriendGraph, -1)    
 
 
 class DeadArticles(Metric):
@@ -545,7 +611,23 @@ class ClusterPolticalness(Metric):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("clusterPolticalness" + "_polticalness=" + self.polticalness), history)
+        util.writeCSV(out_path("clusterPolticalness" + "_polticalness=" + self.polticalness + self.safe_name), history)
+
+class ClusterPolticalnessWRTFriends(ClusterPolticalness):
+
+    def measure(self, network, iterations):
+        userArticleGraph = network.userArticleGraph
+        cluster = []
+        for user in network.users.itervalues():
+            #if iterations > 35 and self.polticalness == "all":
+                #pdb.set_trace()
+            if self.polticalness == "all" or str(
+                    user.getPoliticalness()) == self.polticalness:
+                result = self.clusterOneNode(
+                    userArticleGraph.GetNI(user.getUserId()), network.userArticleFriendGraph)
+                cluster.append(result)
+        return mean(cluster)
+
 
 class LargestConnectedComponent(Metric):
 
@@ -593,12 +675,15 @@ class LargestConnectedComponent(Metric):
 class EigenVectors(Metric):
 
     def measure(self, network, iterations):
-        EigvV =  snap.TFltV()
-        snap.GetEigVec(network.userArticleGraph, EigvV)
-        result = []
-        for Val in EigvV:
-            result.append(Val)
-        return sorted(result)
+        try:
+            EigvV =  snap.TFltV()
+            snap.GetEigVec(network.userArticleGraph, EigvV)
+            result = []
+            for Val in EigvV:
+                result.append(Val)
+            return sorted(result)
+        except:
+            return []
 
     def plot(self, history):
         last = history[-1]
@@ -611,7 +696,7 @@ class EigenVectors(Metric):
         plt.savefig(out_path(self.safe_name + ".png"))
         plt.close()
 
-def getEigenVectorEigenValue(network):
+def getEigenVectorEigenValue(network, graph, iterations):
     counter = 0
     uIdOrAIdToMatrix = {}
     for uId, user in network.users.items():
@@ -621,11 +706,20 @@ def getEigenVectorEigenValue(network):
         uIdOrAIdToMatrix[aId] = counter
         counter = counter + 1
     matrix = [[0 for _ in range(0, counter)] for _ in range(0, counter)]
-    for edges in network.userArticleGraph.Edges():
+    for edges in graph.Edges():
         src = edges.GetSrcNId()
         dest = edges.GetDstNId()
         matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
         matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
+
+    matrixIdPolticalness = []
+    for uId, user in network.users.items():
+        matrixId = uIdOrAIdToMatrix[uId] 
+        matrixIdPolticalness.append([matrixId, user.getPoliticalness()])
+    for aId, article in network.articles.items():
+        matrixId = uIdOrAIdToMatrix[aId]
+        matrixIdPolticalness.append([matrixId, article.getPoliticalness()])
+    util.writeCSV(out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPolticalness)
     #print matrix
     #print len(matrix)
     #print len(matrix[0])
@@ -637,6 +731,17 @@ def getEigenVectorEigenValue(network):
     eigenvalueIdx = eigenvalue.argsort()
     result = eigenvector[:, eigenvalueIdx]
     return (result, uIdOrAIdToMatrix, matrix)
+
+class EigenVectorsWRTFriends(EigenVectors):
+
+    def measure(self, network, iterations):
+        EigvV =  snap.TFltV()
+        snap.GetEigVec(network.userArticleFriendGraph, EigvV)
+        result = []
+        for Val in EigvV:
+            result.append(Val)
+        return sorted(result)
+
 
 class MoreEigenVectors(Metric):
 
@@ -658,22 +763,29 @@ class MoreEigenVectors(Metric):
         # laplacian = scipy.sparse.csgraph.laplacian(matrix)
         # eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
         # result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
-        result = getEigenVectorEigenValue(network)
+        result = getEigenVectorEigenValue(network, network.userArticleGraph, iterations)
         util.writeCSV(out_path("adjacencyMatrix_iterations=" + str(iterations)), result[2])
         eigenvector = result[0]
         return eigenvector[:,1]
 
     def plot(self, history):
         for i,eigenvector in enumerate(history):
-            sortedEigenvector = sorted(eigenvector)
-            print self.name
-            plt.figure()
-            plt.plot(sortedEigenvector)
-            plt.xlabel("Rank of Eigenvector")
-            plt.ylabel("Values of Eigenvector")
-            plt.title("Second Eigenvector")
-            plt.savefig(out_path(self.safe_name + "time=" + str(i) + ".png", "Eigenvectors"))
-            plt.close()
+            if not eigenvector is None:
+                sortedEigenvector = sorted(eigenvector)
+                print self.name
+                plt.figure()
+                plt.plot(sortedEigenvector)
+                plt.xlabel("Rank of Eigenvector")
+                plt.ylabel("Values of Eigenvector")
+                plt.title("Second Eigenvector")
+                plt.savefig(out_path(self.safe_name + "time=" + str(i) + ".png", "Eigenvectors"))
+                plt.close()
+
+class MoreEigenVectorsWRTFriends(MoreEigenVectors):
+    def measure(self, network, iterations):
+        result = getEigenVectorEigenValue(network, network.userArticleFriendGraph, iterations)
+        util.writeCSV(out_path("adjacencyMatrix_iterations=" + str(iterations) + self.safe_name), result[2])
+
 
 #number of common articles between users
 class CommonArticles(Metric):
