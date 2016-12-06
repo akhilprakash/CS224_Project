@@ -13,7 +13,7 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 100
+    NUM_SIMULATIONS = 500
 
     def __init__(self):
         self.articleGenerators = []
@@ -21,7 +21,7 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network()
-        self.recommender = recommendation.PopularRecommender()
+        self.recommender = recommendation.RandomRecommender()
         self.metrics = [
             evaluation.ReadingDistribution(),
             evaluation.PathsBetweenPoliticalnesses(),
@@ -40,14 +40,14 @@ class Experiment(object):
             evaluation.DeadArticles(),
             evaluation.OverallClustering(),
             evaluation.ClusterPolticalness("-2"),
-            #evaluation.ClusterPolticalness("-1"),
-            #evaluation.ClusterPolticalness("0"),
-            #evaluation.ClusterPolticalness("1"),
-            #evaluation.ClusterPolticalness("2"),
+            evaluation.ClusterPolticalness("-1"),
+            evaluation.ClusterPolticalness("0"),
+            evaluation.ClusterPolticalness("1"),
+            evaluation.ClusterPolticalness("2"),
             evaluation.ClusterPolticalness("all"),
             evaluation.LargestConnectedComponent(),
-            #evaluation.EigenVectors(),
-            #evaluation.MoreEigenVectors(),
+            evaluation.EigenVectors(),
+            evaluation.MoreEigenVectors(),
             evaluation.CommonArticles(-2, 2),
             evaluation.CommonArticles(-1, 2),
             evaluation.CommonArticles(-2, 1),
@@ -55,8 +55,12 @@ class Experiment(object):
             evaluation.CommonArticles(2,2),
             evaluation.CommonArticles(-2, -2),
             evaluation.Betweenness(),
-            evaluation.Modularity2()
-            #evaluation.VisualizeGraph()
+            evaluation.ModularityWRTFriends(),
+            evaluation.BetweennessWRTFriends(),
+            evaluation.OverallClusteringWRTFriends(),
+            evaluation.ClusterPolticalnessWRTFriends("all"),
+            evaluation.EigenVectorsWRTFriends(),
+            evaluation.MoreEigenVectorsWRTFriends(),
         ]
         self.histories = defaultdict(list)
 
@@ -64,6 +68,13 @@ class Experiment(object):
         idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
         articleGen = self.articleGenerators[idx]
         return articleGen.createArticle()
+
+    def PLikeBySource(self, reader, article):
+        if reader.getPoliticalness() < 0 and article.getSource() == self.SOURCES[2]:
+            return .9
+        if reader.getPoliticalness() == 0 and article.getSource() == self.SOURCES[1]:
+            return .8
+        return self.PLike(reader, article)
 
     def PLike(self, reader, article):
         diff = abs(reader.getPoliticalness() - article.getPoliticalness())
@@ -75,6 +86,39 @@ class Experiment(object):
             4: .1,
         }
         return diffToProb[diff]
+
+    def triadicClosureBasedOnFriends(self, iterations, force = True):
+        article = self.createArticle()
+        article.incrementTimeToLive(iterations)
+        self.network.addArticle(article)
+        randReaders = random.sample(self.network.users.keys(), 1)
+        for reader in randReaders:
+            probLike = self.PLikeBySource(self.network.users[reader], article)
+            rand = random.random()
+            if rand < probLike:
+                self.network.addEdge(self.network.users[reader], article)
+                neighbors = self.network.friendGraph.GetNI(reader).GetOutEdges()
+                neighs = []
+                for n in neighbors:
+                    neighs.append(n)
+                randNeighbor = random.sample(neighs, 1)
+                #can either force neighrbot to read it ord test with pLike
+                if force:
+                    self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
+                else:
+                    if self.PLikeBySource(self.network.getUser(randNeighbor[0]), article) < random.random():
+                        self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
+        readers = self.network.users.values()
+        allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
+        for readerId, recs in allRecs.iteritems():
+            reader = self.network.getUser(readerId)
+            for recommendedArticle in recs:
+                if random.random() < self.PLikeBySource(reader, recommendedArticle):
+                    self.network.addEdge(reader, recommendedArticle)
+        #self.help0DegreeUsers(iterations, article)
+        #self.help0DegreeArticles(iterations, self.network.users.values())
+        self.runAnalysis(iterations)
+
 
     def randomRandomCompleteTriangles(self, iterations):
         article = self.createArticle()
@@ -102,14 +146,25 @@ class Experiment(object):
                 for r in rand:
                     self.network.addEdge(self.network.users[r], article)
         
-        if iterations % 5 == 0:
+        self.runAnalysis(iterations)
+
+    def help0DegreeUsers(self, iterations, article, N=5):
+        if iterations % N == 0:
             users = self.network.getUsersWithDegree0()
             for u in users:
                 probLike = self.PLike(u, article)
                 if random.random() < probLike:
                     self.network.addEdge(u, article)
 
-        self.runAnalysis(iterations)
+    def help0DegreeArticles(self, iterations, users, N=4):
+        if iterations % N == 0:
+            articles = self.network.getArticlesWithDegree0()
+            for a in articles:
+                for u in users:
+                    probLike = self.PLike(u, a)
+                    if random.random() < probLike:
+                        self.network.addEdge(u, a)
+
 
     def forceConnectedGraph(self, iterations, article):
         if iterations == 0:
@@ -170,7 +225,7 @@ class Experiment(object):
     
     def runAllSimulation(self):
         for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=False):
-            self.simulate(i)
+            self.triadicClosureBasedOnFriends(i)
             self.killArticles(i)
         #print self.distributionResults
 
