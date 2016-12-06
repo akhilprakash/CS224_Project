@@ -313,7 +313,7 @@ class Betweenness(Metric):
                 elif NI in network.articles:
                     polticalness = network.articles[NI].getPoliticalness()
                 else:
-                    print "error"
+                    raise Exception("Should not reach here")
                 dictionary[polticalness] = dictionary[polticalness] + 1
             values.append(dictionary)
         return [betweenessCentr, values]
@@ -381,7 +381,7 @@ class BetweennessWRTFriends(Betweenness):
                 elif NI in network.articles:
                     polticalness = network.articles[NI].getPoliticalness()
                 else:
-                    print "error"
+                    raise Exception("Should not reach here")
                 dictionary[polticalness] = dictionary[polticalness] + 1
             values.append(dictionary)
         return [betweenessCentr, values]
@@ -719,20 +719,7 @@ class EigenVectors(Metric):
         plt.close()
 
 def getEigenVectorEigenValue(network, graph, iterations):
-    counter = 0
-    uIdOrAIdToMatrix = {}
-    for uId, user in network.users.items():
-        uIdOrAIdToMatrix[uId] = counter
-        counter = counter + 1
-    for aId, article in network.articles.items():
-        uIdOrAIdToMatrix[aId] = counter
-        counter = counter + 1
-    matrix = [[0 for _ in range(0, counter)] for _ in range(0, counter)]
-    for edges in graph.Edges():
-        src = edges.GetSrcNId()
-        dest = edges.GetDstNId()
-        matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
-        matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
+    matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)
 
     matrixIdPolticalness = []
     for uId, user in network.users.items():
