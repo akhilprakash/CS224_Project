@@ -13,9 +13,9 @@ class Experiment(object):
 
     SOURCES = ["NYTimes", "WSJ", "Fox"]
     WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
-    NUM_SIMULATIONS = 500
 
-    def __init__(self):
+    def __init__(self, num_simulations=500):
+        self.num_simulations = num_simulations
         self.articleGenerators = []
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.1, .3, 0, .3, .1]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
@@ -224,7 +224,7 @@ class Experiment(object):
                 article.setIsDead(True)
     
     def runAllSimulation(self):
-        for i in util.visual_xrange(self.NUM_SIMULATIONS, use_newlines=False):
+        for i in util.visual_xrange(self.num_simulations, use_newlines=False):
             self.triadicClosureBasedOnFriends(i)
             self.killArticles(i)
         #print self.distributionResults
@@ -249,11 +249,15 @@ def runExperiment(*args, **kwargs):
     Create a new Experiment and run the full simulation and save the results.
 
     All arguments are passed as-is to the Experiment constructor.
+
+    Usage in the Python console:
+        >>> import experiment
+        >>> experiment.runExperiment(num_simulations=10)
     """
     exp = Experiment(*args, **kwargs)
     exp.runAllSimulation()
     exp.saveResults()
-        
+
 
 if __name__ == "__main__":
     runExperiment()
