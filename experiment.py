@@ -55,7 +55,9 @@ class Experiment(object):
     def __init__(self,
                  num_iterations=500,
                  all_analyses=True,
-                 recommender='RandomRecommender'):
+                 simulation="simulate",
+                 recommender='RandomRecommender',
+                 initialize="1"):
         """
         Constructor for Experiment.
 
@@ -65,52 +67,57 @@ class Experiment(object):
         """
         self.num_iterations = num_iterations
         self.all_analyses = all_analyses
+        self.simulation = simulation
         self.articleGenerators = []
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.1, .3, 0, .3, .1]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
-        self.network = Network()
+        self.network = Network(initialize)
         self.recommender = vars(recommendation)[recommender]()
-        self.metrics = [
-            evaluation.ReadingDistribution(),
-            evaluation.PathsBetweenPoliticalnesses(),
-            evaluation.PathsBetweenPoliticalnesses(-1, 1),
-            evaluation.PathsBetweenPoliticalnesses(-2, -1),
-            evaluation.PathsBetweenPoliticalnesses(1, 2),
-            evaluation.PathsBetweenPoliticalnesses(2, 2),
-            evaluation.PathsBetweenPoliticalnesses(-2, -2),
-            evaluation.UserDegreeDistribution("all"),
-            evaluation.Modularity(),
-            evaluation.ArticleDegreeDistribution("all"),
-            evaluation.ArticleDegreeDistribution("alive"),
-            evaluation.ArticleDegreeDistribution("dead"),
-            evaluation.DistributionOfLifeTime("alive"),
-            evaluation.AliveArticles(),
-            evaluation.DeadArticles(),
-            evaluation.OverallClustering(),
-            evaluation.ClusterPolticalness("-2"),
-            evaluation.ClusterPolticalness("-1"),
-            evaluation.ClusterPolticalness("0"),
-            evaluation.ClusterPolticalness("1"),
-            evaluation.ClusterPolticalness("2"),
-            evaluation.ClusterPolticalness("all"),
-            evaluation.LargestConnectedComponent(),
-            #evaluation.EigenVectors(),
-            #evaluation.MoreEigenVectors(),
-            evaluation.CommonArticles(-2, 2),
-            evaluation.CommonArticles(-1, 2),
-            evaluation.CommonArticles(-2, 1),
-            evaluation.CommonArticles(1,2),
-            evaluation.CommonArticles(2,2),
-            evaluation.CommonArticles(-2, -2),
-            evaluation.Betweenness(),
-            evaluation.ModularityWRTFriends(),
-            evaluation.BetweennessWRTFriends(),
-            evaluation.OverallClusteringWRTFriends(),
-            evaluation.ClusterPolticalnessWRTFriends("all"),
-            #evaluation.EigenVectorsWRTFriends(),
-            #evaluation.MoreEigenVectorsWRTFriends(),
-        ]
+        self.metrics = []
+        if self.all_analyses:
+            self.metrics = [
+                evaluation.ReadingDistribution(),
+                evaluation.PathsBetweenPoliticalnesses(),
+                evaluation.PathsBetweenPoliticalnesses(-1, 1),
+                evaluation.PathsBetweenPoliticalnesses(-2, -1),
+                evaluation.PathsBetweenPoliticalnesses(1, 2),
+                evaluation.PathsBetweenPoliticalnesses(2, 2),
+                evaluation.PathsBetweenPoliticalnesses(-2, -2),
+                evaluation.UserDegreeDistribution("all"),
+                evaluation.Modularity(),
+                evaluation.ArticleDegreeDistribution("all"),
+                evaluation.ArticleDegreeDistribution("alive"),
+                evaluation.ArticleDegreeDistribution("dead"),
+                evaluation.DistributionOfLifeTime("alive"),
+                evaluation.AliveArticles(),
+                evaluation.DeadArticles(),
+                evaluation.OverallClustering(),
+                evaluation.ClusterPolticalness("-2"),
+                evaluation.ClusterPolticalness("-1"),
+                evaluation.ClusterPolticalness("0"),
+                evaluation.ClusterPolticalness("1"),
+                evaluation.ClusterPolticalness("2"),
+                evaluation.ClusterPolticalness("all"),
+                evaluation.LargestConnectedComponent(),
+                #evaluation.EigenVectors(),
+                #evaluation.MoreEigenVectors(),
+                evaluation.CommonArticles(-2, 2),
+                evaluation.CommonArticles(-1, 2),
+                evaluation.CommonArticles(-2, 1),
+                evaluation.CommonArticles(1,2),
+                evaluation.CommonArticles(2,2),
+                evaluation.CommonArticles(-2, -2),
+                evaluation.Betweenness(),
+                evaluation.ModularityWRTFriends(),
+                evaluation.BetweennessWRTFriends(),
+                evaluation.OverallClusteringWRTFriends(),
+                evaluation.ClusterPolticalnessWRTFriends("all"),
+                #evaluation.EigenVectorsWRTFriends(),
+                #evaluation.MoreEigenVectorsWRTFriends(),
+            ]
+        else:
+            self.metrics = [evaluation.ReadingDistribution()]
         self.histories = defaultdict(list)
 
     def createArticle(self):
@@ -118,10 +125,16 @@ class Experiment(object):
         articleGen = self.articleGenerators[idx]
         return articleGen.createArticle()
 
-    def triadicClosureBasedOnFriends(self, iterations, force = True, plike = PLike):
+    def introduceArticle(self):
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
+        return article
+
+
+
+    def triadicClosureBasedOnFriends(self, iterations, force = True, plike = PLikeBaseOnData):
+        article = self.introduceArticle()
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
             probLike = plike(self.network.users[reader], article)
@@ -140,21 +153,14 @@ class Experiment(object):
                     if plike(self.network.getUser(randNeighbor[0]), article) < random.random():
                         self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
         readers = self.network.users.values()
-        allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
-        for readerId, recs in allRecs.iteritems():
-            reader = self.network.getUser(readerId)
-            for recommendedArticle in recs:
-                if random.random() < plike(reader, recommendedArticle):
-                    self.network.addEdge(reader, recommendedArticle)
+        runRecommendation(readers, plike)
         #self.help0DegreeUsers(iterations, article)
         #self.help0DegreeArticles(iterations, self.network.users.values())
         self.runAnalysis(iterations)
 
 
     def randomRandomCompleteTriangles(self, iterations, plike=PLike):
-        article = self.createArticle()
-        article.incrementTimeToLive(iterations)
-        self.network.addArticle(article)
+        article = self.introduceArticle()
         randReaders = random.sample(self.network.users.keys(), 1)
         for reader in randReaders:
             probLike = plike(self.network.users[reader], article)
@@ -176,10 +182,10 @@ class Experiment(object):
                 rand = random.sample(users, 1)
                 for r in rand:
                     self.network.addEdge(self.network.users[r], article)
-        
+        runRecommendation(randReaders, plike)
         self.runAnalysis(iterations)
 
-    def help0DegreeUsers(self, iterations, article, plike, N=5):
+    def help0DegreeUsers(self, iterations, article, plike=PLikeBaseOnData, N=5):
         if iterations % N == 0:
             users = self.network.getUsersWithDegree0()
             for u in users:
@@ -187,7 +193,7 @@ class Experiment(object):
                 if random.random() < probLike:
                     self.network.addEdge(u, article)
 
-    def help0DegreeArticles(self, iterations, users, plike, N=4):
+    def help0DegreeArticles(self, iterations, users, plike=PLikeBaseOnData, N=4):
         if iterations % N == 0:
             articles = self.network.getArticlesWithDegree0()
             for a in articles:
@@ -203,19 +209,39 @@ class Experiment(object):
             for reader in readers:
                 self.network.addEdge(reader, article)
 
-    def simulate(self, iterations, all_analyses=True, plike=PLike):
-        readers = self.network.getNextReaders() # get readers that can read at this time point
+    def recc_system_simulate(self, iterations, plike = PLikeBaseOnData):
+        readers = self.network.getNextReaders()  # get readers that can read at this time point
 
         # Introduce a new article
-        article = self.createArticle()
-        article.incrementTimeToLive(iterations)
-        self.network.addArticle(article)
-        #self.forceConnectedGraph(iterations, article)
-        for reader in readers: # ask each reader if like it or not
-            probLike = plike(reader, article)
+        article = self.introduceArticle()
+        # self.forceConnectedGraph(iterations, article)
+
+        '''
+        for reader in readers:  # ask each reader if like it or not
+            probLike = self.PLike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
+        '''
 
+        # Compute recommendations and "show" them to users
+        runRecommendation(readers, plike)
+        '''
+        # On every third iteration, "show" the readers the top 5 most popular articles
+        if iterations % 3 == 0:
+            articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
+            sortedDeg = sorted(articleDeg, key=lambda x: x[1], reverse=True)
+            topFive = sortedDeg[0:5]
+            for (aId, _) in topFive:
+                article = self.network.getArticle(aId)
+                for reader in readers:
+                    probLike = self.PLike(reader, article)
+                    if random.random() < probLike:
+                        self.network.addEdge(reader, article)
+        '''
+        self.runAnalysis(iterations)
+
+
+    def runRecommendation(self, readers, plike=PLikeBaseOnData):
         # Compute recommendations and "show" them to users
         allRecs = self.recommender.makeRecommendations(self.network, readers, N=1)
         for readerId, recs in allRecs.iteritems():
@@ -224,6 +250,20 @@ class Experiment(object):
                 if random.random() < plike(reader, recommendedArticle):
                     self.network.addEdge(reader, recommendedArticle)
 
+
+    def simulate(self, iterations, plike=PLikeBaseOnData):
+        readers = self.network.getNextReaders() # get readers that can read at this time point
+
+        # Introduce a new article
+        article = self.introduceArticle()
+
+        for reader in readers: # ask each reader if like it or not
+            probLike = plike(reader, article)
+            if random.random() < probLike:
+                self.network.addEdge(reader, article)
+
+        self.runRecommendation(readers, plike)
+        '''
         # On every third iteration, "show" the readers the top 5 most popular articles
         if iterations % 3 == 0:
             articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
@@ -235,6 +275,7 @@ class Experiment(object):
                     probLike = plike(reader, article)
                     if random.random() < probLike:
                         self.network.addEdge(reader, article)
+        '''
 
         # if iterations % 5 == 0:
         #     users = self.network.getUsersWithDegree0()
@@ -242,17 +283,11 @@ class Experiment(object):
         #         probLike = self.PLike(u, article)
         #         if random.random() < probLike:
         #             self.network.addEdge(u, article)
-        self.runAnalysis(iterations, all_analyses)
+        self.runAnalysis(iterations)
 
-    def runAnalysis(self, iterations, all=True):
-        if all:
-            for metric in self.metrics:
-                self.histories[metric].append(metric.measure(self.network, iterations))
-        else:
-            metricsToRun = [evaluation.ReadingDistribution()] #evaluation.Statistics()]
-            for metric in metricsToRun:
-                self.histories[metric].append(metric.measure(self.network, iterations))
-
+    def runAnalysis(self, iterations):
+        for metric in self.metrics:
+            self.histories[metric].append(metric.measure(self.network, iterations))
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
@@ -262,10 +297,13 @@ class Experiment(object):
     
     def runAllSimulation(self):
         for i in util.visual_xrange(self.num_iterations, use_newlines=False):
-            self.simulate(i, self.all_analyses)
-            # self.triadicClosureBasedOnFriends(i)
+            if self.simulation == "simulate":
+                self.simulate(i)
+            elif self.simulation == "triadicClosure":
+                self.triadicClosureBasedOnFriends(i)
+            elif self.simulation == "recc":
+                self.recc_system_simulate(i)
             self.killArticles(i)
-        #print self.distributionResults
 
     def saveResults(self):
         # Save results
@@ -290,7 +328,7 @@ def runExperiment(*args, **kwargs):
 
     Usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(all_analyses=False, num_iterations=10)
+        >>> experiment.runExperiment(all_analyses=False, num_iterations=10, simulation="recc", recommender='RandomRecommender')
     """
     exp = Experiment(*args, **kwargs)
     exp.runAllSimulation()
