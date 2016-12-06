@@ -118,14 +118,14 @@ class Experiment(object):
                 self.network.addEdge(reader, article)
 
     def simulate(self, iterations):
-        readers = self.network.getNextReaders()
+        readers = self.network.getNextReaders() # get readers that can read at this time point
 
         # Introduce a new article
         article = self.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         #self.forceConnectedGraph(iterations, article)
-        for reader in readers:
+        for reader in readers: # ask each reader if like it or not
             probLike = self.PLike(reader, article)
             if random.random() < probLike:
                 self.network.addEdge(reader, article)
