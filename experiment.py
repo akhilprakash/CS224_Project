@@ -18,7 +18,8 @@ class Experiment(object):
     def __init__(self,
                  num_iterations=500,
                  all_analyses=True,
-                 recommender='RandomRecommender'):
+                 recommender='RandomRecommender',
+                 ):
         """
         Constructor for Experiment.
 
@@ -288,7 +289,7 @@ def runExperiment(*args, **kwargs):
 
     All arguments are passed as-is to the Experiment constructor.
 
-    Usage in the Python console:
+    Example usage in the Python console:
         >>> import experiment
         >>> experiment.runExperiment(all_analyses=False, num_iterations=10)
     """
