@@ -58,10 +58,10 @@ class Network(object):
     def getUserIdsWithSpecificPoliticalness(self, politicalness):
         return [user.getUserId() for user in self.users.itervalues() if user.getPoliticalness() == politicalness]
 
-    def initializeUsers(self):
+    def initializeUsers(self, N = self.friendGraph.Nodes()):
         # initialize users independent of their friends
         indexToPoliticalness = {0: -2, 1: -1, 2: 0, 3: 1, 4: 2}
-        for node in self.friendGraph.Nodes():
+        for node in range(0, N):
             index = util.generatePoliticalness(self.POLITICALNESS_DISTRIBUTION_FOR_USERS)
             polticalness = indexToPoliticalness[index]
             user = User(polticalness, node.GetId())
