@@ -243,7 +243,17 @@ class Experiment(object):
         for metric in self.metrics:
             metric.plot(self.histories[metric])
 
-if __name__ == "__main__":
-    exp = Experiment()
+
+def runExperiment(*args, **kwargs):
+    """
+    Create a new Experiment and run the full simulation and save the results.
+
+    All arguments are passed as-is to the Experiment constructor.
+    """
+    exp = Experiment(*args, **kwargs)
     exp.runAllSimulation()
     exp.saveResults()
+        
+
+if __name__ == "__main__":
+    runExperiment()
