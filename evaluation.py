@@ -166,10 +166,19 @@ class GraphViz(Metric):
 
     def measure(self, network, iterations):
         print self.name
+
         plt.figure()
-        # plt.bar(keys, vals, color="blue")
-        # plt.xlabel("Article Politicalness")
-        # plt.ylabel("Frequency Normalized bby number of users")
+        G = nx.Graph()  # Create a graph
+        users = network.users.keys
+
+        for user in users():
+            articlesRead = 
+            G.add_edge(user, dictionary[target])  # Add an edge for each dictionary entry
+            # Nodes are automatically created
+
+        pos = nx.spring_layout(G)  # Layout algorithm
+        nx.draw(G, with_labels=True)  # Draw the graph
+
         plt.title("Graph at Iteration " + str(iterations))
         plt.savefig(out_path(self.safe_name + "Iter" + str(iterations) + ".png"))
         plt.close()
