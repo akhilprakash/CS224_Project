@@ -5,7 +5,7 @@ method.
 import snap
 import random
 import util
-from util import print_error, out_path
+from util import print_error
 
 import matplotlib
 matplotlib.use('Agg')
@@ -41,7 +41,7 @@ class Metric(object):
         params = '_'.join(['%s_%s' % (k, v) for k, v in vars(self).iteritems()])
         return '%s_%s' % (self.name, params)
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         """Given a Network, return a metric of any type."""
         raise NotImplementedError
 
@@ -52,7 +52,7 @@ class Metric(object):
         """
         print_error("No plotter for %s" % self)
 
-    def save(self, history):
+    def save(self, experiment, history):
         """
         Save history to a file.
         """
@@ -87,7 +87,7 @@ class Statistics(Metric):
     For each specific article, the types of users that read it
     """
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         pass
 
         '''
@@ -152,7 +152,7 @@ class Statistics(Metric):
         plt.xlabel("Ordered Users")
         plt.ylabel("Number of Articles Liked")
         plt.title("Number of Articles Liked By Each User \n " + str(experiment.parameters))
-        plt.savefig(out_path(self.safe_name + " NumArticlesLiked" + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + " NumArticlesLiked" + ".png"))
         plt.close()
 
 
@@ -161,7 +161,7 @@ class Statistics(Metric):
         plt.xlabel("Ordered Articles")
         plt.ylabel("Number of Times Article Liked")
         plt.title("Number of Users that Like Each Article \n " + str(experiment.parameters))
-        plt.savefig(out_path(self.safe_name + " TimesArticlesLiked" + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + " TimesArticlesLiked" + ".png"))
         plt.close()
 
         # Number of times each article was read by a user of each type (probably should sort articles based on average times read
@@ -171,7 +171,7 @@ class Statistics(Metric):
         plt.xlabel("Ordered Articles")
         plt.ylabel("Number of Times Article Liked")
         plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters))
-        plt.savefig(out_path(self.safe_name + " NumTypesThatReadArticle" + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + " NumTypesThatReadArticle" + ".png"))
         plt.close()
 
 
@@ -206,7 +206,7 @@ class Statistics(Metric):
             plt.ylabel("Frequency")
             plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             # make this a mosaic plot later
-            plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
+            plt.savefig(experiment.out_path(self.safe_name + "key=" + str(key) + ".png"))
             plt.close()
         numUsersWithPoliticalness = history[-1][1]
         for key, value in last.items():
@@ -226,13 +226,13 @@ class Statistics(Metric):
             plt.ylabel("Frequency Normalized bby number of users")
             plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             # make this a mosaic plot later
-            plt.savefig(out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
+            plt.savefig(experiment.out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
             plt.close()
         '''
 
-    def save(self, history):
+    def save(self, experiment, history):
         pass
-        util.writeCSV(out_path("statistics"), history)
+        util.writeCSV(experiment.out_path("statistics"), history)
 
 
 class GraphViz(Metric):
@@ -240,7 +240,7 @@ class GraphViz(Metric):
     Visualize graph
     """
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         print self.name
 
         plt.figure()
@@ -313,7 +313,7 @@ nx.draw_networkx_edges(G,pos,
         # nx.draw_circular(G, with_labels=True)  # Draw the graph
 
         plt.title("Graph at Iteration " + str(iterations))
-        plt.savefig(out_path(self.safe_name + "Iter" + str(iterations) + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + "Iter" + str(iterations) + ".png"))
         plt.close()
         pass
 
@@ -322,9 +322,9 @@ nx.draw_networkx_edges(G,pos,
         pass
 
 
-    def save(self, history):
+    def save(self, experiment, history):
         pass
-        util.writeCSV(out_path("statistics"), history)
+        util.writeCSV(experiment.out_path("statistics"), history)
 
 
 # No longer makes sense since articles don't have political leanings anymore.
@@ -332,7 +332,7 @@ class ReadingDistribution(Metric):
     """
     Distribution of article political leaning given user political leaning.
     """
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         userArticleGraph = network.userArticleGraph
         numUsersWithPoliticalness = collections.defaultdict(int)
         distribution = {}
@@ -368,7 +368,7 @@ class ReadingDistribution(Metric):
             plt.ylabel("Frequency")
             plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             #make this a mosaic plot later
-            plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
+            plt.savefig(experiment.out_path(self.safe_name + "key=" + str(key) + ".png"))
             plt.close()
         numUsersWithPoliticalness = history[-1][1]
         for key, value in last.items():
@@ -388,11 +388,11 @@ class ReadingDistribution(Metric):
             plt.ylabel("Frequency Normalized bby number of users")
             plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             #make this a mosaic plot later
-            plt.savefig(out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
+            plt.savefig(experiment.out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
             plt.close()
 
-    def save(self, history):
-        util.writeCSV(out_path("readingDistribution"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("readingDistribution"), history)
 
 
 class PathsBetweenPoliticalnesses(Metric):
@@ -400,7 +400,7 @@ class PathsBetweenPoliticalnesses(Metric):
         self.politicalness1 = politicalness1
         self.politicalness2 = politicalness2
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         userArticleGraph = network.userArticleGraph
         negativeTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness1)
         posTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness2)
@@ -421,14 +421,14 @@ class PathsBetweenPoliticalnesses(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Average Distance Between Politicalness")
         plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
-        plt.savefig(out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
+        plt.savefig(experiment.out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
 
-    def save(self, history):
-        util.writeCSV(out_path("pathsbetweenpoliticalness" + str(self.politicalness1) + str(self.politicalness2)), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("pathsbetweenpoliticalness" + str(self.politicalness1) + str(self.politicalness2)), history)
 
 
 class Modularity2(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         CmtyV = snap.TCnComV()
         modularity = snap.CommunityGirvanNewman(network.userArticleGraph, CmtyV)
         politicalnessByCommunity = {}
@@ -460,7 +460,7 @@ class Modularity2(Metric):
         plt.plot(modularity)
         plt.xlabel("Number of Iterations")
         plt.ylabel("Modularity of whole netowrk")
-        plt.savefig(out_path(self.safe_name + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + ".png"))
         politicalnessByCommunityHistory = map(lambda x: x[1], history)
         politicalnessByCommunityHistory = politicalnessByCommunityHistory[(len(politicalnessByCommunityHistory)-5):len(politicalnessByCommunityHistory)]
         for i, h in enumerate(politicalnessByCommunityHistory):
@@ -475,17 +475,17 @@ class Modularity2(Metric):
                     plt.xlabel("Politicalness")
                     plt.ylabel("Count")
                     plt.title("Count vs. Politicalness Community = " + str(cmty))
-                    plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i+len(modularity) -5) + '.png', "Modularity2"))
+                    plt.savefig(experiment.out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i+len(modularity) -5) + '.png', "Modularity2"))
                     plt.close()
                 except IOError:
                     print_error("Error making plot")
 
-    def save(self, history):
-        util.writeCSV(out_path("modularity2"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("modularity2"), history)
 
 
 class Modularity(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         result = []
         for idx, i in enumerate(range(-2, 3)):
             ids = network.getUserIdsWithSpecificPoliticalness(i)
@@ -502,15 +502,15 @@ class Modularity(Metric):
             plt.figure()
             oneCluster = map(lambda x:x[idx], history)
             plt.plot(oneCluster)
-            plt.savefig(out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
+            plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
             plt.close()
 
-    def save(self, history):
-        util.writeCSV(out_path("modularity"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("modularity"), history)
 
 
 class ModularityWRTFriends(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         result = []
         for idx, i in enumerate(range(-2, 3)):
             ids = network.getUserIdsWithSpecificPoliticalness(i)
@@ -527,11 +527,11 @@ class ModularityWRTFriends(Metric):
             plt.figure()
             oneCluster = map(lambda x:x[idx], history)
             plt.plot(oneCluster)
-            plt.savefig(out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
+            plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
             plt.close()
 
-    def save(self, history):
-        util.writeCSV(out_path("modularity"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("modularity"), history)
 
 
 def copyGraph(graph):
@@ -544,7 +544,7 @@ def copyGraph(graph):
 
 
 class Betweenness(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         Nodes = snap.TIntFltH()
         Edges = snap.TIntPrFltH()
         snap.GetBetweennessCentr(network.userArticleGraph, Nodes, Edges, 1.0)
@@ -592,7 +592,7 @@ class Betweenness(Metric):
             plt.xlabel("Edge Ordering")
             plt.ylabel("Edge Betweenness")
             plt.title("Edge Betweeness")
-            plt.savefig(out_path(self.safe_name + "iteartions=" + str(i) + '.png'))
+            plt.savefig(experiment.out_path(self.safe_name + "iteartions=" + str(i) + '.png'))
             plt.close()
         values = map(lambda x: x[1], history)
         values = values[(len(values)-5):len(values)]
@@ -607,14 +607,14 @@ class Betweenness(Metric):
                     plt.xlabel("Politicalness")
                     plt.ylabel("Count")
                     plt.title("Count vs. Politicalness Community = "+ str(i))
-                    plt.savefig(out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness_Community"))
+                    plt.savefig(experiment.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness_Community"))
                     plt.close()
 
-    def save(self, history):
-        util.writeCSV(out_path("modularity2"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("modularity2"), history)
 
 class BetweennessWRTFriends(Betweenness):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         Nodes = snap.TIntFltH()
         Edges = snap.TIntPrFltH()
         snap.GetBetweennessCentr(network.userArticleFriendGraph, Nodes, Edges, 1.0)
@@ -655,7 +655,7 @@ class UserDegreeDistribution(Metric):
     def __init__(self, politicalness="all"):
         self.politicalness = politicalness
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         userArticleGraph = network.userArticleGraph
         degree = []
         for user in network.users.itervalues():
@@ -673,11 +673,11 @@ class UserDegreeDistribution(Metric):
         plt.xlabel("User Degree")
         plt.ylabel("Frequency")
         plt.title("Histogram of User Degree")
-        plt.savefig(out_path(self.safe_name + '.png'))
+        plt.savefig(experiment.out_path(self.safe_name + '.png'))
         plt.close()
 
-    def save(self, history):
-        util.writeCSV(out_path("userDegree"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("userDegree"), history)
 
 
 def getArticleDegreeDistribution(network, article_type):
@@ -696,7 +696,7 @@ class ArticleDegreeDistribution(Metric):
     def __init__(self, article_type):
         self.article_type = article_type
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         return map(lambda x: x[1], getArticleDegreeDistribution(network, self.article_type))
 
     def plot(self, experiment, network, history):
@@ -706,17 +706,17 @@ class ArticleDegreeDistribution(Metric):
             plt.xlabel("Aricle Degree")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Degree")
-            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "AritcleDegree"))
+            plt.savefig(experiment.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "AritcleDegree"))
             plt.close()
 
-    def save(self, history):
+    def save(self, experiment, history):
         # This is for Akhil's R plots
         if self.article_type == 'all':
-            util.writeCSV(out_path("articleDegree"), history)
+            util.writeCSV(experiment.out_path("articleDegree"), history)
         elif self.article_type == 'alive':
-            util.writeCSV(out_path("aliveAricleDegree"), history)
+            util.writeCSV(experiment.out_path("aliveAricleDegree"), history)
         elif self.article_type == 'dead':
-            util.writeCSV(out_path("deadArticle"), history)
+            util.writeCSV(experiment.out_path("deadArticle"), history)
 
 
 class DistributionOfLifeTime(Metric):
@@ -724,7 +724,7 @@ class DistributionOfLifeTime(Metric):
     def __init__(self, article_type):
         self.article_type = article_type
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         lifeTime = []
         for article in network.articles.itervalues():
             if self.article_type == "alive" and not article.getIsDead():
@@ -741,16 +741,16 @@ class DistributionOfLifeTime(Metric):
             plt.xlabel("Aricle Lifetime")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Lifetime")
-            plt.savefig(out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "LifetimeDistribution"))
+            plt.savefig(experiment.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "LifetimeDistribution"))
             plt.close()
 
-    def save(self, history):
-        util.writeCSV(out_path("article lifetime disitburtion" + self.article_type), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("article lifetime disitburtion" + self.article_type), history)
 
 
 
 class AliveArticles(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         counterAlive = 0
         counterDead = 0
         for article in network.articles.itervalues():
@@ -772,17 +772,17 @@ class AliveArticles(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Number of Alive Articles")
         plt.title("Number of Alive Articles vs. Number of Iterations")
-        plt.savefig(out_path(self.safe_name + '.png'))
+        plt.savefig(experiment.out_path(self.safe_name + '.png'))
         plt.close()
 
-    def save(self, history):
+    def save(self, experiment, history):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("numberAliveArticles"), history)
+        util.writeCSV(experiment.out_path("numberAliveArticles"), history)
 
 class OverallClustering(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         #printGraph(network.userArticleGraph)
         return snap.GetClustCf(network.userArticleGraph, -1)
 
@@ -797,23 +797,23 @@ class OverallClustering(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Clustering Coefficient")
         plt.title("Clustering Coefficient vs. Number of Iterations")
-        plt.savefig(out_path(self.safe_name + '.png'))
+        plt.savefig(experiment.out_path(self.safe_name + '.png'))
         plt.close()
 
-    def save(self, history):
+    def save(self, experiment, history):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("OverallClustering" + self.name), history)
+        util.writeCSV(experiment.out_path("OverallClustering" + self.name), history)
 
 class OverallClusteringWRTFriends(OverallClustering):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         #printGraph(network.userArticleGraph)
         return snap.GetClustCf(network.userArticleFriendGraph, -1)    
 
 
 class DeadArticles(Metric):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         counterDead = 0
         for article in network.articles.itervalues():
             if article.getIsDead():
@@ -832,14 +832,14 @@ class DeadArticles(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Number of Dead Articles")
         plt.title("Number of Dead Articles vs. Number of Iterations")
-        plt.savefig(out_path(self.safe_name + '.png'))
+        plt.savefig(experiment.out_path(self.safe_name + '.png'))
         plt.close()
 
-    def save(self, history):
+    def save(self, experiment, history):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("numberDeadArticles"), history)
+        util.writeCSV(experiment.out_path("numberDeadArticles"), history)
 
 def printGraph(graph):
     for EI in graph.Edges():
@@ -865,7 +865,7 @@ class ClusterPoliticalness(Metric):
         counter = counter / 2
         return (2.0 * counter) / (degree * (degree - 1))        
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         userArticleGraph = network.userArticleGraph
         cluster = []
         for user in network.users.itervalues():
@@ -890,18 +890,18 @@ class ClusterPoliticalness(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Clustering Coefficient")
         plt.title("Clustering Coefficient for politicalness " + str(self.politicalness) + "\n vs. Number of Itertions")
-        plt.savefig(out_path(self.safe_name + "polticialness" + str(self.politicalness) + '.png'))
+        plt.savefig(experiment.out_path(self.safe_name + "polticialness" + str(self.politicalness) + '.png'))
         plt.close()
 
-    def save(self, history):
+    def save(self, experiment, history):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("clusterPoliticalness" + "_politicalness=" + self.politicalness + self.safe_name), history)
+        util.writeCSV(experiment.out_path("clusterPoliticalness" + "_politicalness=" + self.politicalness + self.safe_name), history)
 
 class ClusterPoliticalnessWRTFriends(ClusterPoliticalness):
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         userArticleGraph = network.userArticleGraph
         cluster = []
         for user in network.users.itervalues():
@@ -917,7 +917,7 @@ class ClusterPoliticalnessWRTFriends(ClusterPoliticalness):
 
 class LargestConnectedComponent(Metric):
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         Components = snap.TCnComV()
         snap.GetWccs(network.userArticleGraph, Components)
         numComponents = []
@@ -930,7 +930,7 @@ class LargestConnectedComponent(Metric):
             print self.name
             plt.figure()
             plt.bar(range(len(elem)), elem)
-            plt.savefig(out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
+            plt.savefig(experiment.out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
             plt.close()
         largestComponent = map(max, history)
         plt.figure()
@@ -938,7 +938,7 @@ class LargestConnectedComponent(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Size of Largest Connected Component")
         plt.title("Size of Largest Connected Component vs. Number of Iterations")
-        plt.savefig(out_path(self.safe_name + "largest_component" + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + "largest_component" + ".png"))
         plt.clf()
         plt.close()
         numComponents = map(len, history)
@@ -947,20 +947,20 @@ class LargestConnectedComponent(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Number of Components")
         plt.title("Number of Components vs. Number of Iterations")
-        plt.savefig(out_path(self.safe_name + "number_components" + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + "number_components" + ".png"))
         plt.clf()
         plt.close()
 
-    def save(self, history):
+    def save(self, experiment, history):
         largestComponent = map(max, history)
-        util.writeCSV(out_path("largestCompeonent"), history)
+        util.writeCSV(experiment.out_path("largestCompeonent"), history)
         numComponents = map(len, history)
-        util.writeCSV(out_path("numberCompeonent"), history)
+        util.writeCSV(experiment.out_path("numberCompeonent"), history)
 
 
 class EigenVectors(Metric):
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         try:
             EigvV =  snap.TFltV()
             snap.GetEigVec(network.userArticleGraph, EigvV)
@@ -979,7 +979,7 @@ class EigenVectors(Metric):
         plt.xlabel("Rank of Eigenvector")
         plt.ylabel("Values of Eigenvector")
         plt.title("First Eigenvector")
-        plt.savefig(out_path(self.safe_name + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + ".png"))
         plt.close()
 
 def getEigenVectorEigenValue(network, graph, iterations):
@@ -992,7 +992,7 @@ def getEigenVectorEigenValue(network, graph, iterations):
     for aId, article in network.articles.items():
         matrixId = uIdOrAIdToMatrix[aId]
         matrixIdPoliticalness.append([matrixId, article.getPoliticalness()])
-    util.writeCSV(out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPoliticalness)
+    util.writeCSV(experiment.out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPoliticalness)
     #print matrix
     #print len(matrix)
     #print len(matrix[0])
@@ -1007,7 +1007,7 @@ def getEigenVectorEigenValue(network, graph, iterations):
 
 class EigenVectorsWRTFriends(EigenVectors):
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         EigvV =  snap.TFltV()
         snap.GetEigVec(network.userArticleFriendGraph, EigvV)
         result = []
@@ -1018,7 +1018,7 @@ class EigenVectorsWRTFriends(EigenVectors):
 
 class MoreEigenVectors(Metric):
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         # counter = 0
         # uIdOrAIdToMatrix = {}
         # for uId, user in network.users.items():
@@ -1037,7 +1037,7 @@ class MoreEigenVectors(Metric):
         # eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
         # result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
         result = getEigenVectorEigenValue(network, network.userArticleGraph, iterations)
-        util.writeCSV(out_path("adjacencyMatrix_iterations=" + str(iterations)), result[2])
+        util.writeCSV(experiment.out_path("adjacencyMatrix_iterations=" + str(iterations)), result[2])
         eigenvector = result[0]
         return eigenvector[:,1]
 
@@ -1051,13 +1051,13 @@ class MoreEigenVectors(Metric):
                 plt.xlabel("Rank of Eigenvector")
                 plt.ylabel("Values of Eigenvector")
                 plt.title("Second Eigenvector")
-                plt.savefig(out_path(self.safe_name + "time=" + str(i) + ".png", "Eigenvectors"))
+                plt.savefig(experiment.out_path(self.safe_name + "time=" + str(i) + ".png", "Eigenvectors"))
                 plt.close()
 
 class MoreEigenVectorsWRTFriends(MoreEigenVectors):
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         result = getEigenVectorEigenValue(network, network.userArticleFriendGraph, iterations)
-        util.writeCSV(out_path("adjacencyMatrix_iterations=" + str(iterations) + self.safe_name), result[2])
+        util.writeCSV(experiment.out_path("adjacencyMatrix_iterations=" + str(iterations) + self.safe_name), result[2])
 
 
 #number of common articles between users
@@ -1067,7 +1067,7 @@ class CommonArticles(Metric):
         self.politicalness1 = politicalness1
         self.politicalness2 = politicalness2
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         userArticleGraph = network.userArticleGraph
         negativeTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness1)
         posTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness2)
@@ -1089,17 +1089,17 @@ class CommonArticles(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Common Neighbors")
         plt.title("Common Neighbors between " + str(self.politicalness1) + " and " + str(self.politicalness2))
-        plt.savefig(out_path(self.safe_name + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
+        plt.savefig(experiment.out_path(self.safe_name + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
         plt.close()
 
 
-    def save(self, history):
-        util.writeCSV(out_path("CommonArticles_" + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("CommonArticles_" + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
 
 
 class VisualizeGraph(Metric):
 
-    def measure(self, network, iterations):
+    def measure(self, experiment, network, iterations):
         eigenvector, dictionary, matrix = getEigenVectorEigenValue(network)
         
         twoEigenVectors = eigenvector[1:3,:]
@@ -1140,9 +1140,9 @@ class VisualizeGraph(Metric):
                         plt.plot([eigenVectors[row,0], eigenVectors[col, 0]], [eigenVectors[row,1], eigenVectors[col, 1]], 'k-')
 
             plt.title("Graph Representation")
-            plt.savefig(out_path(self.safe_name + "time=" + str(counter) +".png"))
+            plt.savefig(experiment.out_path(self.safe_name + "time=" + str(counter) +".png"))
             plt.close()
             counter = counter + 1
 
-    def save(self, history):
-        util.writeCSV(out_path("eigenvectorsgraphrepresentation"), history)
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("eigenvectorsgraphrepresentation"), history)

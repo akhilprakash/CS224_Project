@@ -116,6 +116,12 @@ class CollaborativeFiltering(Recommender):
     http://www.slideshare.net/koeverstrep/tutorial-bpocf
 
     (this is technically latent semantic analysis??)
+
+    When articles don't have enough likes to compute similarity,
+    we default to a similarity based on their sources.
+
+    When a reader hasn't liked enough articles to compute scores for candidate
+    articles,
     """
 
     TRUST = util.load_trust_data()
