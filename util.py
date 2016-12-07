@@ -2,6 +2,7 @@ from __future__ import division
 
 import csv
 import os
+import random
 import sys
 import time
 
@@ -12,6 +13,10 @@ def weighted_choice(weights):
     weights = np.asarray(weights)
     weights /= np.sum(weights)
     return np.random.choice(range(len(weights)), p=weights)
+
+
+def with_prob(p):
+    return random.random() < p
 
 
 def writeCSV(fileName, value):

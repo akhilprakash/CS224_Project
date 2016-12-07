@@ -11,49 +11,33 @@ import recommendation
 import util
 from articleGenerator import ArticleGenerator
 from network import Network
-from util import data_path, out_path, print_error
+from util import data_path, out_path, print_error, with_prob
 
 
 class PLike(object):
-    @staticmethod
-    def basedOnData(reader, article):
-        data = []
-        with open(data_path("percof-readers-trust.csv")) as f:
-            csvreader = csv.reader(f, delimiter=",")
-            for row in csvreader:
-                oneRow = []
-                for col in row:
-                    oneRow.append(col)
-                data.append(oneRow)
+    TRUST = {}
+    with open(data_path('percof-readers-trust.csv')) as f:
+        reader = csv.reader(f, delimiter=",")
+        next(reader, None)  # skip headers
+        for row in reader:
+            source = row[0]
+            TRUST[source] = {
+                -2: row[6],
+                -1: row[5],
+                 0: row[4],
+                +1: row[3],
+                +2: row[2],
+            }
 
-        userPoliticalness = reader.getPoliticalness()
-        userPoliticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
-        source = article.getSource()
-        for row in data:
-            if row[0] == source:
-                colIndex = userPoliticalnessToDataIndex[userPoliticalness]
-                return row[0][colIndex]
-        raise Exception("Invalid Article Source")
+    UNIFORM_LIKE_PROB = 0.2
 
     @staticmethod
-    def bySource(reader, article):
-        if reader.getPoliticalness() < 0 and article.getSource() == Experiment.SOURCES[2]:
-            return .9
-        if reader.getPoliticalness() == 0 and article.getSource() == Experiment.SOURCES[1]:
-            return .8
-        return PLike(reader, article)
+    def empirical(reader, article):
+        return PLike.TRUST[article.source][reader.politicalness]
 
     @staticmethod
-    def static(reader, article):
-        diff = abs(reader.getPoliticalness() - article.getPoliticalness())
-        diffToProb = {
-            0: .6,
-            1: .4,
-            2: .2,
-            3: .1,
-            4: .1,
-        }
-        return diffToProb[diff]
+    def uniform(reader, article):
+        return PLike.UNIFORM_LIKE_PROB
 
 
 class Experiment(object):
@@ -66,20 +50,14 @@ class Experiment(object):
                  all_analyses=False,
                  recommender='Random',
                  networkInitType='1',
-                 pLikeMethod='basedOnData',
+                 pLikeMethod='empirical',
                  numRecsPerIteration=1,
-                 force=True,  # old
-                 simulation="simulate",  # old
-                 help0DegreeUsers=False,  # old
-                 help0DegreeArticles=False,  # old
-                 popular=True,  #old
-                 ) :
+                 ):
         """
         Constructor for Experiment.
 
         :param num_iterations: int number of iterations to run in this experiment.
         :param all_analyses: True to run all the analyses, False if not
-        :param simulation: IGNORED
         :param recommender: string name of the recommender class to use as defined in recommender.py
         :param pLikeMethod: method name of the PLike version to use
         """
@@ -93,7 +71,7 @@ class Experiment(object):
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network(networkInitType)
         self.pLike = getattr(PLike, pLikeMethod)
-        self.recommender = vars(recommendation)[recommender]()
+        self.recommender = getattr(recommendation, recommender)()
         self.metrics = []
         if self.all_analyses:
             self.metrics = [
