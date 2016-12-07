@@ -27,6 +27,26 @@ def writeCSV(fileName, value):
             spamwriter.writerow([value[i]])
 
 
+def load_trust_data():
+    """
+    trust[source][pol] = percentage of users with preference `pol` that trust `source`
+    """
+    trust = {}
+    with open(data_path('percof-readers-trust.csv')) as f:
+        reader = csv.reader(f, delimiter=",")
+        next(reader, None)  # skip headers
+        for row in reader:
+            source = row[0]
+            trust[source] = {
+                -2: row[6],
+                -1: row[5],
+                0: row[4],
+                +1: row[3],
+                +2: row[2],
+            }
+    return trust
+
+
 class ProgressBar(object):
     def __init__(self, total=None, width=40, use_newlines=False):
         self.total = total

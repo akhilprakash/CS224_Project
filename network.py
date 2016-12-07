@@ -1,9 +1,10 @@
+import pdb
+import random
+
 import snap
+
 import util
 from user import User
-import random
-import os
-import pdb
 
 
 def getMax(NIdToDistH):
@@ -17,11 +18,11 @@ def getMax(NIdToDistH):
 
 
 class Network(object):
-
     ALPHA = .8
     X_MIN = 1
     NUMBER_OF_READERS = 5
 
+    # TODO: is this based on data?
     POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .3, .2, .3, .1]
 
     def largestNodeId(self, graph):
@@ -187,7 +188,6 @@ class Network(object):
     def powerLawExponentialCutoff(self, userNodeId, x):
         beta = self.getBeta(userNodeId)
         return beta
-        #return beta ** (1-self.ALPHA) * x ** (-self.ALPHA) * math.exp(-beta * x) / scipy.special.gammainc(1-self.ALPHA, beta * self.X_MIN)
 
     def sampleFromPowerLawExponentialCutoff(self, userNodeId):
         # Rejection sampling
@@ -214,15 +214,23 @@ class Network(object):
             readers.append(sortedResults[i][0])
         return readers
 
+    def getUser(self, userId):
+        return self.users[userId]
+
+    # v These convenience iterators only provide live articles v
+
     def getArticles(self):
         """Iterator over articles that aren't dead."""
         return (article for article in self.articles.itervalues() if not article.isDead)
 
-    def getRandomArticles(self, N):
-        return random.sample(list(self.getArticles()), N)
-
-    def getUser(self, userId):
-        return self.users[userId]
+    def articlesNotLikedByUser(self, userId):
+        """Iterator over articles that are not yet liked by the given user."""
+        return (
+            article
+            for article in self.articles.itervalues()
+            if not self.userArticleGraph.IsEdge(article.articleId, userId)
+            and not article.isDead
+        )
 
     def articlesLikedByUser(self, userId):
         """Iterator over the articles liked by the given user."""

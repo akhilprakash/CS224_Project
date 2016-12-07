@@ -1,4 +1,7 @@
-"""Recommendation Engines
+"""
+Recommendation Engines
+
+Notes: Don't recommend dead articles and or articles already liked by reader.
 """
 from __future__ import division
 import heapq
@@ -6,6 +9,7 @@ import itertools
 import random
 
 from util import PairsDict
+import util
 
 
 class Recommender(object):
@@ -27,33 +31,53 @@ class Random(Recommender):
     Recommend articles chosen uniformly from all the articles.
     """
     def makeRecommendations(self, network, readers, N=1):
-        return {r.getUserId(): network.getRandomArticles(N) for r in readers}
+        return {
+            r.userId: random.sample(list(network.articlesNotLikedByUser(r.userId)), N)
+            for r in readers
+        }
 
 
 class Popular(Recommender):
     """
-    Recommend the same set of globally popular articles to every reader.
+    Recommend globally popular articles.
     """
     def makeRecommendations(self, network, readers, N=1):
-        articles = []
-        for a in network.articles.itervalues():
-            if not a.getIsDead():
-                articles.append(a)
-
         def numLikes(article):
             return network.userArticleGraph.GetNI(article.getArticleId()).GetDeg()
-        popular = heapq.nlargest(N, articles, numLikes)
-        return {r.getUserId(): popular for r in readers}
+        return {
+            reader.userId: heapq.nlargest(N, network.articlesNotLikedByUser(reader.userId), numLikes)
+            for reader in readers
+        }
+
+
+class ContentBased(Recommender):
+    """
+    Recommends based on content qualities of the article and the reader.
+
+    Article features:
+        - Source
+
+    User features:
+        - Political leaning
+
+    Content-based score is based on the trust?
+    """
+    TRUST = util.load_trust_data()
+
+    def makeRecommendations(self, network, readers, N=1):
+        recs = {}
+        for reader in readers:
+            candidates = network.articlesNotLikedByUser(reader.userId)
+            recs[reader] = heapq.nlargest(N, candidates, lambda c: self.TRUST[c.source][reader.politicalness])
 
 
 class Instagram(Recommender):
     """
     Uniformly shows reader all the articles that their friends liked.
-
-    Potential problems:
-    shows all articles liked by friends regardless of how long ago that was.
-    (this might be taken care of by the isDead check now)
     """
+    def __init__(self, default_recommender):
+        self.default_recommender = default_recommender
+
     def makeRecommendations(self, network, readers, N=1):
         recs = {}
         for reader in readers:
@@ -61,12 +85,26 @@ class Instagram(Recommender):
                 article
                 for friend in network.friendGraph.GetNI(reader.userId).GetOutEdges()
                 for article in network.articlesLikedByUser(friend)
+                if not network.userArticleGraph.IsEdge(article.articleId, friend)
             ]
-            recs[reader] = random.sample(candidates, N)
+            # If there aren't enough candidates use default recommender
+            if len(candidates) >= N:
+                recs[reader] = random.sample(candidates, N)
+            else:
+                recs[reader] = self.default_recommender.makeRecommendations(network, readers, N)
         return recs
 
 
-# TODO: LSA-based recommender??
+class InstagramWithContentBasedDefault(Instagram):
+    """Convenience class for Instagram recommender with fallback to ContentBased."""
+    def __init__(self):
+        Instagram.__init__(self, default_recommender=ContentBased())
+
+
+class InstagramWithRandomDefault(Instagram):
+    """Convenience class for Instagram recommender with fallback to Random."""
+    def __init__(self):
+        Instagram.__init__(self, default_recommender=Random())
 
 
 class CollaborativeFiltering(Recommender):
@@ -79,6 +117,9 @@ class CollaborativeFiltering(Recommender):
 
     (this is technically latent semantic analysis??)
     """
+
+    TRUST = util.load_trust_data()
+
     def makeRecommendations(self, network, readers, N=1):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
@@ -87,9 +128,12 @@ class CollaborativeFiltering(Recommender):
             b = articleB.articleId
             ratersA = set(network.userArticleGraph.GetNI(a).GetOutEdges())
             ratersB = set(network.userArticleGraph.GetNI(b).GetOutEdges())
+
             # TODO: make sure that new articles are handled properly here
             # so that we don't need to do anything special to initialize new
             # articles -- they should be recommend to new users.
+            # Default score should approach source similarity
+            # if the articles don't have enough ratings yet.
 
             # Use Jaccard similarity with correction to prevent divide-by-zero
             sim[a, b] = (len(ratersA | ratersB) + 1) / (len(ratersA & ratersB) + 1)
@@ -97,15 +141,8 @@ class CollaborativeFiltering(Recommender):
         # For each reader:
         recs = {}
         for reader in readers:
-            likedArticles = {
-                article.articleId
-                for article in network.articlesLikedByUser(reader.userId)
-            }
-            candidateArticles = [
-                article
-                for article in network.getArticles()
-                if article.articleId not in likedArticles
-            ]
+            likedArticles = network.articlesLikedByUser(reader.userId)
+            candidateArticles = network.articlesNotLikedByUser(reader.userId)
 
             # Compute dot product between the user's rating vector and the item-item similarity vector
             # for each candidate article. For each candidate article, this is basically the sum of the similarities
@@ -113,7 +150,7 @@ class CollaborativeFiltering(Recommender):
             # This will sum up exactly as many similarities as the number of articles that the reader has liked.
             # Then we should choose the articles with the highest score.
             def score(candidate):
-                return sum(sim[candidate.articleId, liked] for liked in likedArticles)
+                return sum(sim[candidate.articleId, liked.articleId] for liked in likedArticles)
             recs[reader.userId] = heapq.nlargest(N, candidateArticles, score)
 
         return recs

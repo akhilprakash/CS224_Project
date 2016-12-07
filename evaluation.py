@@ -45,7 +45,7 @@ class Metric(object):
         """Given a Network, return a metric of any type."""
         raise NotImplementedError
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         """
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
@@ -112,7 +112,7 @@ class Statistics(Metric):
         '''
 
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         # Number of articles read by each user
 
         userIDs = network.users.keys()
@@ -289,7 +289,7 @@ nx.draw_networkx_edges(G,pos,
         pass
 
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         pass
 
 
@@ -323,7 +323,7 @@ class ReadingDistribution(Metric):
                     distribution[userPoliticalness] = {articlePoliticalness: 1}
         return [distribution, numUsersWithPoliticalness]
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         last = history[-1][0]
         for key, value in last.items():
             #value is a dictionary
@@ -385,7 +385,7 @@ class PathsBetweenPoliticalnesses(Metric):
                     distance.append(path)
         return mean(distance)
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         print self.name
         plt.figure()
         plt.plot(history)
@@ -424,7 +424,7 @@ class Modularity2(Metric):
 
         return [modularity, politicalnessByCommunity]
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         print self.name
         modularity = map(lambda x: x[0], history)
         plt.figure()
@@ -467,7 +467,7 @@ class Modularity(Metric):
 
         return result
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         for idx, i in enumerate(range(-2, 3)):
             print self.name
             plt.figure()
@@ -492,7 +492,7 @@ class ModularityWRTFriends(Metric):
 
         return result
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         for idx, i in enumerate(range(-2, 3)):
             print self.name
             plt.figure()
@@ -553,7 +553,7 @@ class Betweenness(Metric):
             values.append(dictionary)
         return [betweenessCentr, values]
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         betweeness = map(lambda x: x[0], history)
         betweeness = betweeness[(len(betweeness)-10):len(betweeness)]
         for i,b in enumerate(betweeness):
@@ -635,7 +635,7 @@ class UserDegreeDistribution(Metric):
                 degree.append(userArticleGraph.GetNI(uId).GetOutDeg())
         return degree
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         # Just plot the dist for the last iteration
         print self.name
         last = history[-1]
@@ -670,7 +670,7 @@ class ArticleDegreeDistribution(Metric):
     def measure(self, network, iterations):
         return map(lambda x: x[1], getArticleDegreeDistribution(network, self.article_type))
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         for i,h in enumerate(history):
             plt.figure()
             plt.hist(h)
@@ -704,7 +704,7 @@ class DistributionOfLifeTime(Metric):
                 lifeTime.append(article.getTimeToLive() - iterations)
         return lifeTime
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         for i,h in enumerate(history):
             print self.name
             plt.figure()
@@ -731,7 +731,7 @@ class AliveArticles(Metric):
                 counterDead = counterDead + 1
         return counterAlive
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         """
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
@@ -757,7 +757,7 @@ class OverallClustering(Metric):
         #printGraph(network.userArticleGraph)
         return snap.GetClustCf(network.userArticleGraph, -1)
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         """
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
@@ -791,7 +791,7 @@ class DeadArticles(Metric):
                 counterDead = counterDead + 1
         return counterDead
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         """
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
@@ -849,7 +849,7 @@ class ClusterPoliticalness(Metric):
                 cluster.append(result)
         return mean(cluster)
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         """
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
@@ -896,7 +896,7 @@ class LargestConnectedComponent(Metric):
             numComponents.append(CnCom.Len())
         return numComponents
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         for i,elem in enumerate(history):
             print self.name
             plt.figure()
@@ -942,7 +942,7 @@ class EigenVectors(Metric):
         except:
             return []
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         last = history[-1]
         print self.name
         plt.figure()
@@ -1012,7 +1012,7 @@ class MoreEigenVectors(Metric):
         eigenvector = result[0]
         return eigenvector[:,1]
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         for i,eigenvector in enumerate(history):
             if not eigenvector is None:
                 sortedEigenvector = sorted(eigenvector)
@@ -1053,7 +1053,7 @@ class CommonArticles(Metric):
                 commonNeighs.append(len(Nbrs))
         return mean(commonNeighs)
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         plt.figure()
         print self.name
         plt.plot(history)
@@ -1079,7 +1079,7 @@ class VisualizeGraph(Metric):
         self.network = network
         return (twoEigenVectors, dictionary, matrix)
 
-    def plot(self, network, history):
+    def plot(self, experiment, network, history):
         counter = 0
         for (eigenVectors, dictionary, matrix) in history:
             plt.figure()
