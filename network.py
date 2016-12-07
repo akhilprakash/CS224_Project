@@ -8,8 +8,6 @@ import os
 import collections
 import pdb
 import numpy as np
-import util
-import networkx as nx
 
 def getMax(NIdToDistH):
     nodeId = -1
@@ -49,29 +47,6 @@ class Network(object):
             self.initializeUsers()
         elif initialize == "3":
             self.intializeUsersAccordingToFriends()
-
-    def createUserUserGraph(self):
-        G = nx.Graph()
-        edgeToWeightDict = util.PairsDict()
-        userUserGraph = snap.TUNGraph.New()
-        for uId in self.users.keys():
-            userUserGraph.AddNode(uId)
-        for uId1 in self.users.keys():
-            for uId2 in self.users.keys():
-                Nbrs = snap.TIntV()
-                snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
-                if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
-                    weight = 1
-                else:
-                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                G.add_edge(uId1, uId2, weight = weight)
-                edgeToWeightDict[(uId1, uId2)] = weight
-                userUserGraph.AddEdge(uId1, uId2)
-        #https://networkx.github.io/documentation/development/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
-        #betweenness_centrality(G, k=None, normalized=True, weight=None, endpoints=False, seed=None)
-        return (G, userUserGraph, edgeToWeightDict)
-
-
 
     def spreadPolticalness(self, nodeId, depth):
         poltical = self.users[nodeId].getPoliticalness()
