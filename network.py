@@ -9,6 +9,7 @@ import collections
 import pdb
 import numpy as np
 
+
 def getMax(NIdToDistH):
     nodeId = -1
     longestPath = -1
@@ -17,6 +18,7 @@ def getMax(NIdToDistH):
             longestPath = NIdToDistH[item]
             nodeId = item
     return (item, longestPath)
+
 
 class Network(object):
 
@@ -53,10 +55,10 @@ class Network(object):
         for newNode in self.friendGraph.GetNI(nodeId).GetOutEdges():
             #either pass on political, political - 1, oor poltial + 1
             weights = [.3 + depth, .5 + depth, .3 + depth]
-            idx = util.generatePoliticalness(weights)
+            idx = util.weighted_choice(weights)
             if political == 2 or political == -2:
                 weights = [.5 + depth, .5 + depth]
-                idx = util.generatePoliticalness(weights)
+                idx = util.weighted_choice(weights)
                 if idx == 0:
                     self.users[newNode].setPoliticalness(political)
                 else:
@@ -153,7 +155,7 @@ class Network(object):
         # initialize users independent of their friends
         indexToPoliticalness = {0: -2, 1: -1, 2: 0, 3: 1, 4: 2}
         for node in self.friendGraph.Nodes():
-            index = util.generatePoliticalness(self.POLITICALNESS_DISTRIBUTION_FOR_USERS)
+            index = util.weighted_choice(self.POLITICALNESS_DISTRIBUTION_FOR_USERS)
             politicalness = indexToPoliticalness[index]
             user = User(politicalness, node.GetId())
             self.addUser(user)
@@ -179,7 +181,7 @@ class Network(object):
                     userFriend = self.getUser(friend)
                     potlicalnessOfFriends[userFriend.getPoliticalness()+2] = potlicalnessOfFriends[userFriend.getPoliticalness()+2] + 1
                 user = self.getUser(userId)
-                idx = util.generatePoliticalness(potlicalnessOfFriends)
+                idx = util.weighted_choice(potlicalnessOfFriends)
                 if potlicalnessOfFriends[idx] == 0:
                     pdb.set_trace()
                 user.setPoliticalness(idx -2)

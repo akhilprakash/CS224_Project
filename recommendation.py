@@ -69,7 +69,6 @@ class Instagram(Recommender):
 # TODO: LSA-based recommender??
 
 
-# FIXME: don't recommend dead articles
 class CollaborativeFiltering(Recommender):
     """
     Item-item collaborative filtering.
@@ -83,24 +82,27 @@ class CollaborativeFiltering(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
-        for articleA, articleB in itertools.combinations(network.articles, 2):
+        for articleA, articleB in itertools.combinations(network.getArticles(), 2):
             ratersA = set(network.userArticleGraph.GetNI(articleA).GetOutEdges())
             ratersB = set(network.userArticleGraph.GetNI(articleB).GetOutEdges())
             # TODO: make sure that new articles are handled properly here
             # so that we don't need to do anything special to initialize new
             # articles -- they should be recommend to new users.
+
             # Use Jaccard similarity with correction to prevent divide-by-zero
             sim[articleA, articleB] = (len(ratersA | ratersB) + 1) / (len(ratersA & ratersB) + 1)
 
         # For each reader:
         recs = {}
         for reader in readers:
-            likedArticles = {article.articleId for article in network.articlesLikedByUser(reader)}
+            likedArticles = {
+                article.articleId
+                for article in network.articlesLikedByUser(reader)
+            }
             candidateArticles = [
                 article
-                for article in network.articles.itervalues()
+                for article in network.getArticles()
                 if article.articleId not in likedArticles
-                and not article.isDead
             ]
 
             # Compute dot product between the user's rating vector and the item-item similarity vector

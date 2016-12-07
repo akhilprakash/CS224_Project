@@ -4,6 +4,8 @@ import json
 import random
 from collections import defaultdict
 
+import numpy as np
+
 import evaluation
 import recommendation
 import util
@@ -86,7 +88,7 @@ class Experiment(object):
         self.all_analyses = all_analyses
         self.numRecsPerIteration = numRecsPerIteration
         self.articleGenerators = []
-        self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.1, .3, 0, .3, .1]))
+        self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.15, .35, 0, .35, .15]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network(networkInitType)
@@ -139,13 +141,9 @@ class Experiment(object):
                             #evaluation.Statistics()]
         self.histories = defaultdict(list)
 
-    def createArticle(self):
-        idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
-        articleGen = self.articleGenerators[idx]
-        return articleGen.createArticle()
-
     def introduceArticle(self, iterations):
-        article = self.createArticle()
+        articleGen = np.random.choice(self.articleGenerators, p=self.WEIGHTS_SOURCES)
+        article = articleGen.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         return article
@@ -221,7 +219,7 @@ def runExperiment(*args, **kwargs):
     exp.saveResults()
 
     # Save parameters
-    with open(out_path('parameters.json'), 'w') as fp:
+    with open(out_path('parameters.json'), 'wb') as fp:
         json.dump(kwargs, fp)
 
 
