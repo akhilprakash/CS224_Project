@@ -137,6 +137,10 @@ class CollaborativeFiltering(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
+        # print "NUM ARTICLES NOT LIKED YET %d/%d" % (
+        #     sum(network.userArticleGraph.GetNI(article.articleId).GetDeg() == 0 for article in network.getArticles()),
+        #     sum(1 for _ in network.getArticles())
+        # )
         for articleA, articleB in itertools.combinations(network.getArticles(), 2):
             a = articleA.articleId
             b = articleB.articleId
@@ -152,7 +156,7 @@ class CollaborativeFiltering(Recommender):
             # Use Jaccard similarity with correction to prevent divide-by-zero
             # The correction makes the similarity approach the source similarity
             # as the unions of the ratings approaches zero.
-            sim[a, b] = (len(ratersA | ratersB) + source_similarity) / (len(ratersA & ratersB) + source_similarity)
+            sim[a, b] = (len(ratersA & ratersB) + source_similarity) / (len(ratersA | ratersB) + 1.)
 
         # For each reader:
         recs = {}
