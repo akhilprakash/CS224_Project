@@ -806,7 +806,6 @@ class EigenVectors(Metric):
         plt.savefig(out_path(self.safe_name + ".png"))
         plt.close()
 
-'''
 def getEigenVectorEigenValue(network, graph, iterations):
     matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)
 
@@ -829,7 +828,6 @@ def getEigenVectorEigenValue(network, graph, iterations):
     eigenvalueIdx = eigenvalue.argsort()
     result = eigenvector[:, eigenvalueIdx]
     return (result, uIdOrAIdToMatrix, matrix)
-'''
 
 class EigenVectorsWRTFriends(EigenVectors):
 
