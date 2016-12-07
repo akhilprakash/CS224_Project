@@ -92,23 +92,23 @@ class Statistics(Metric):
         pass
         '''
         userArticleGraph = network.userArticleGraph
-        numUsersWithPolticalness = collections.defaultdict(int)
+        numUsersWithPoliticalness = collections.defaultdict(int)
         distribution = {}
         for user in network.users.itervalues():
             nodeUserId = user.getUserId()
-            userPolticalness = user.getPoliticalness()
+            userPoliticalness = user.getPoliticalness()
             for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
                 articlePoliticalness = network.getArticle(article).getPoliticalness()
-                numUsersWithPolticalness[userPolticalness] = numUsersWithPolticalness[userPolticalness] + 1
-                if userPolticalness in distribution:
-                    innerDict = distribution[userPolticalness]
+                numUsersWithPoliticalness[userPoliticalness] = numUsersWithPoliticalness[userPoliticalness] + 1
+                if userPoliticalness in distribution:
+                    innerDict = distribution[userPoliticalness]
                     if articlePoliticalness in innerDict:
                         innerDict[articlePoliticalness] = innerDict[articlePoliticalness] + 1
                     else:
                         innerDict[articlePoliticalness] = 1
                 else:
-                    distribution[userPolticalness] = {articlePoliticalness: 1}
-        return [distribution, numUsersWithPolticalness]
+                    distribution[userPoliticalness] = {articlePoliticalness: 1}
+        return [distribution, numUsersWithPoliticalness]
         '''
 
 
@@ -128,19 +128,19 @@ class Statistics(Metric):
             plt.bar(keys, vals, color="blue")
             plt.xlabel("Article Politicalness")
             plt.ylabel("Frequency")
-            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             # make this a mosaic plot later
             plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
             plt.close()
-        numUsersWithPolticalness = history[-1][1]
+        numUsersWithPoliticalness = history[-1][1]
         for key, value in last.items():
             # value is a dictionary
             keys = []
             vals = []
             for k1, v1 in value.items():
                 keys.append(k1)
-                if numUsersWithPolticalness[k1] != 0:
-                    vals.append(v1 / (1.0 * numUsersWithPolticalness[k1]))
+                if numUsersWithPoliticalness[k1] != 0:
+                    vals.append(v1 / (1.0 * numUsersWithPoliticalness[k1]))
                 else:
                     vals.append(0)
             print self.name
@@ -148,7 +148,7 @@ class Statistics(Metric):
             plt.bar(keys, vals, color="blue")
             plt.xlabel("Article Politicalness")
             plt.ylabel("Frequency Normalized bby number of users")
-            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             # make this a mosaic plot later
             plt.savefig(out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
             plt.close()
@@ -184,23 +184,23 @@ class ReadingDistribution(Metric):
     """
     def measure(self, network, iterations):
         userArticleGraph = network.userArticleGraph
-        numUsersWithPolticalness = collections.defaultdict(int)
+        numUsersWithPoliticalness = collections.defaultdict(int)
         distribution = {}
         for user in network.users.itervalues():
             nodeUserId = user.getUserId()
-            userPolticalness = user.getPoliticalness()
+            userPoliticalness = user.getPoliticalness()
             for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
                 articlePoliticalness = network.getArticle(article).getPoliticalness()
-                numUsersWithPolticalness[userPolticalness] = numUsersWithPolticalness[userPolticalness] + 1
-                if userPolticalness in distribution:
-                    innerDict = distribution[userPolticalness]
+                numUsersWithPoliticalness[userPoliticalness] = numUsersWithPoliticalness[userPoliticalness] + 1
+                if userPoliticalness in distribution:
+                    innerDict = distribution[userPoliticalness]
                     if articlePoliticalness in innerDict:
                         innerDict[articlePoliticalness] = innerDict[articlePoliticalness] + 1
                     else:
                         innerDict[articlePoliticalness] = 1
                 else:
-                    distribution[userPolticalness] = {articlePoliticalness: 1}
-        return [distribution, numUsersWithPolticalness]
+                    distribution[userPoliticalness] = {articlePoliticalness: 1}
+        return [distribution, numUsersWithPoliticalness]
 
     def plot(self, network, history):
         last = history[-1][0]
@@ -216,19 +216,19 @@ class ReadingDistribution(Metric):
             plt.bar(keys, vals, color = "blue")
             plt.xlabel("Article Politicalness")
             plt.ylabel("Frequency")
-            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             #make this a mosaic plot later
             plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
             plt.close()
-        numUsersWithPolticalness = history[-1][1]
+        numUsersWithPoliticalness = history[-1][1]
         for key, value in last.items():
             #value is a dictionary
             keys = []
             vals = []
             for k1, v1 in value.items():
                 keys.append(k1)
-                if numUsersWithPolticalness[k1] != 0:
-                    vals.append(v1 / (1.0 * numUsersWithPolticalness[k1]))
+                if numUsersWithPoliticalness[k1] != 0:
+                    vals.append(v1 / (1.0 * numUsersWithPoliticalness[k1]))
                 else:
                     vals.append(0)
             print self.name
@@ -236,7 +236,7 @@ class ReadingDistribution(Metric):
             plt.bar(keys, vals, color = "blue")
             plt.xlabel("Article Politicalness")
             plt.ylabel("Frequency Normalized bby number of users")
-            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
             #make this a mosaic plot later
             plt.savefig(out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
             plt.close()
@@ -269,39 +269,39 @@ class PathsBetweenPoliticalnesses(Metric):
         plt.figure()
         plt.plot(history)
         plt.xlabel("Number of Iterations")
-        plt.ylabel("Average Distance Between Polticalness")
+        plt.ylabel("Average Distance Between Politicalness")
         plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
         plt.savefig(out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
 
     def save(self, history):
-        util.writeCSV(out_path("pathsbetweenpolticalness" + str(self.politicalness1) + str(self.politicalness2)), history) 
+        util.writeCSV(out_path("pathsbetweenpoliticalness" + str(self.politicalness1) + str(self.politicalness2)), history)
 
 
 class Modularity2(Metric):
     def measure(self, network, iterations):
         CmtyV = snap.TCnComV()
         modularity = snap.CommunityGirvanNewman(network.userArticleGraph, CmtyV)
-        polticalnessByCommunity = {}
+        politicalnessByCommunity = {}
         for Cmty in CmtyV:
             for NI in Cmty:
-                polticalness = 0
+                politicalness = 0
                 if NI in network.users:
-                    polticalness = network.users[NI].getPoliticalness()
+                    politicalness = network.users[NI].getPoliticalness()
                 elif NI in network.articles:
-                    polticalness = network.articles[NI].getPoliticalness()
+                    politicalness = network.articles[NI].getPoliticalness()
                 else:
-                    raise Exception("Error in finding polticalness")
-                if Cmty in polticalnessByCommunity:
-                    innerDict = polticalnessByCommunity[Cmty]
-                    if polticalness in innerDict:
-                        polticalnessByCommunity[Cmty][polticalness] = polticalnessByCommunity[Cmty][polticalness] + 1
+                    raise Exception("Error in finding politicalness")
+                if Cmty in politicalnessByCommunity:
+                    innerDict = politicalnessByCommunity[Cmty]
+                    if politicalness in innerDict:
+                        politicalnessByCommunity[Cmty][politicalness] = politicalnessByCommunity[Cmty][politicalness] + 1
                     else:
-                        polticalnessByCommunity[Cmty][polticalness] = 1
+                        politicalnessByCommunity[Cmty][politicalness] = 1
                 else:
-                    polticalnessByCommunity[Cmty] = collections.defaultdict(int)
-                    polticalnessByCommunity[Cmty][polticalness] = 1
+                    politicalnessByCommunity[Cmty] = collections.defaultdict(int)
+                    politicalnessByCommunity[Cmty][politicalness] = 1
 
-        return [modularity, polticalnessByCommunity]
+        return [modularity, politicalnessByCommunity]
 
     def plot(self, network, history):
         print self.name
@@ -311,9 +311,9 @@ class Modularity2(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Modularity of whole netowrk")
         plt.savefig(out_path(self.safe_name + ".png"))
-        polticalnessByCommunityHistory = map(lambda x: x[1], history)
-        polticalnessByCommunityHistory = polticalnessByCommunityHistory[(len(polticalnessByCommunityHistory)-5):len(polticalnessByCommunityHistory)]
-        for i, h in enumerate(polticalnessByCommunityHistory):
+        politicalnessByCommunityHistory = map(lambda x: x[1], history)
+        politicalnessByCommunityHistory = politicalnessByCommunityHistory[(len(politicalnessByCommunityHistory)-5):len(politicalnessByCommunityHistory)]
+        for i, h in enumerate(politicalnessByCommunityHistory):
             for cmty, innerDict in h.items():
                 values = []
                 for pol in range(-2, 3):
@@ -322,9 +322,9 @@ class Modularity2(Metric):
                     print self.name
                     plt.figure()
                     plt.bar(range(-2, 3), values)
-                    plt.xlabel("Polticalness")
+                    plt.xlabel("Politicalness")
                     plt.ylabel("Count")
-                    plt.title("Count vs. Polticalness Community = " + str(cmty))
+                    plt.title("Count vs. Politicalness Community = " + str(cmty))
                     plt.savefig(out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i+len(modularity) -5) + '.png', "Modularity2"))
                     plt.close()
                 except IOError:
@@ -352,7 +352,7 @@ class Modularity(Metric):
             plt.figure()
             oneCluster = map(lambda x:x[idx], history)
             plt.plot(oneCluster)
-            plt.savefig(out_path(self.safe_name + 'polticalness' + str(i) + '.png', "Modularity"))
+            plt.savefig(out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
             plt.close()
 
     def save(self, history):
@@ -377,7 +377,7 @@ class ModularityWRTFriends(Metric):
             plt.figure()
             oneCluster = map(lambda x:x[idx], history)
             plt.plot(oneCluster)
-            plt.savefig(out_path(self.safe_name + 'polticalness' + str(i) + '.png', "Modularity"))
+            plt.savefig(out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
             plt.close()
 
     def save(self, history):
@@ -421,14 +421,14 @@ class Betweenness(Metric):
         for CnCom in components:
             dictionary = collections.defaultdict(int)
             for NI in CnCom:
-                polticalness = 0
+                politicalness = 0
                 if NI in network.users:
-                    polticalness = network.users[NI].getPoliticalness()
+                    politicalness = network.users[NI].getPoliticalness()
                 elif NI in network.articles:
-                    polticalness = network.articles[NI].getPoliticalness()
+                    politicalness = network.articles[NI].getPoliticalness()
                 else:
                     raise Exception("Should not reach here")
-                dictionary[polticalness] = dictionary[polticalness] + 1
+                dictionary[politicalness] = dictionary[politicalness] + 1
             values.append(dictionary)
         return [betweenessCentr, values]
 
@@ -454,9 +454,9 @@ class Betweenness(Metric):
                         val.append(v[pol])
                     plt.figure()
                     plt.bar(range(-2, 3), val)
-                    plt.xlabel("Polticalness")
+                    plt.xlabel("Politicalness")
                     plt.ylabel("Count")
-                    plt.title("Count vs. Polticalness Community = "+ str(i))
+                    plt.title("Count vs. Politicalness Community = "+ str(i))
                     plt.savefig(out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness_Community"))
                     plt.close()
 
@@ -489,14 +489,14 @@ class BetweennessWRTFriends(Betweenness):
         for CnCom in components:
             dictionary = collections.defaultdict(int)
             for NI in CnCom:
-                polticalness = 0
+                politicalness = 0
                 if NI in network.users:
-                    polticalness = network.users[NI].getPoliticalness()
+                    politicalness = network.users[NI].getPoliticalness()
                 elif NI in network.articles:
-                    polticalness = network.articles[NI].getPoliticalness()
+                    politicalness = network.articles[NI].getPoliticalness()
                 else:
                     raise Exception("Should not reach here")
-                dictionary[polticalness] = dictionary[polticalness] + 1
+                dictionary[politicalness] = dictionary[politicalness] + 1
             values.append(dictionary)
         return [betweenessCentr, values]
 
@@ -695,10 +695,10 @@ def printGraph(graph):
     for EI in graph.Edges():
         print "edge (%d, %d)" % (EI.GetSrcNId(), EI.GetDstNId())
 
-class ClusterPolticalness(Metric):
+class ClusterPoliticalness(Metric):
 
-    def __init__(self, polticalness):
-        self.polticalness = polticalness
+    def __init__(self, politicalness):
+        self.politicalness = politicalness
 
     # triangles
     def clusterOneNode(self, node, graph):
@@ -719,10 +719,10 @@ class ClusterPolticalness(Metric):
         userArticleGraph = network.userArticleGraph
         cluster = []
         for user in network.users.itervalues():
-            #if iterations > 35 and self.polticalness == "all":
+            #if iterations > 35 and self.politicalness == "all":
                 #pdb.set_trace()
-            if self.polticalness == "all" or str(
-                    user.getPoliticalness()) == self.polticalness:
+            if self.politicalness == "all" or str(
+                    user.getPoliticalness()) == self.politicalness:
                 result = self.clusterOneNode(
                     userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
                 cluster.append(result)
@@ -739,26 +739,26 @@ class ClusterPolticalness(Metric):
         plt.plot(range(0, numIterations), history)
         plt.xlabel("Number of Iterations")
         plt.ylabel("Clustering Coefficient")
-        plt.title("Clustering Coefficient for polticalness " + str(self.polticalness) + "\n vs. Number of Itertions")
-        plt.savefig(out_path(self.safe_name + "polticialness" + str(self.polticalness) + '.png'))
+        plt.title("Clustering Coefficient for politicalness " + str(self.politicalness) + "\n vs. Number of Itertions")
+        plt.savefig(out_path(self.safe_name + "polticialness" + str(self.politicalness) + '.png'))
         plt.close()
 
     def save(self, history):
         """
         Save history to a file.
         """
-        util.writeCSV(out_path("clusterPolticalness" + "_polticalness=" + self.polticalness + self.safe_name), history)
+        util.writeCSV(out_path("clusterPoliticalness" + "_politicalness=" + self.politicalness + self.safe_name), history)
 
-class ClusterPolticalnessWRTFriends(ClusterPolticalness):
+class ClusterPoliticalnessWRTFriends(ClusterPoliticalness):
 
     def measure(self, network, iterations):
         userArticleGraph = network.userArticleGraph
         cluster = []
         for user in network.users.itervalues():
-            #if iterations > 35 and self.polticalness == "all":
+            #if iterations > 35 and self.politicalness == "all":
                 #pdb.set_trace()
-            if self.polticalness == "all" or str(
-                    user.getPoliticalness()) == self.polticalness:
+            if self.politicalness == "all" or str(
+                    user.getPoliticalness()) == self.politicalness:
                 result = self.clusterOneNode(
                     userArticleGraph.GetNI(user.getUserId()), network.userArticleFriendGraph)
                 cluster.append(result)
@@ -835,14 +835,14 @@ class EigenVectors(Metric):
 def getEigenVectorEigenValue(network, graph, iterations):
     matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)
 
-    matrixIdPolticalness = []
+    matrixIdPoliticalness = []
     for uId, user in network.users.items():
         matrixId = uIdOrAIdToMatrix[uId] 
-        matrixIdPolticalness.append([matrixId, user.getPoliticalness()])
+        matrixIdPoliticalness.append([matrixId, user.getPoliticalness()])
     for aId, article in network.articles.items():
         matrixId = uIdOrAIdToMatrix[aId]
-        matrixIdPolticalness.append([matrixId, article.getPoliticalness()])
-    util.writeCSV(out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPolticalness)
+        matrixIdPoliticalness.append([matrixId, article.getPoliticalness()])
+    util.writeCSV(out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPoliticalness)
     #print matrix
     #print len(matrix)
     #print len(matrix[0])
@@ -939,12 +939,12 @@ class CommonArticles(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Common Neighbors")
         plt.title("Common Neighbors between " + str(self.politicalness1) + " and " + str(self.politicalness2))
-        plt.savefig(out_path(self.safe_name + "polticalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
+        plt.savefig(out_path(self.safe_name + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
         plt.close()
 
 
     def save(self, history):
-        util.writeCSV(out_path("CommonArticles_" + "polticalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
+        util.writeCSV(out_path("CommonArticles_" + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
 
 
 class VisualizeGraph(Metric):
@@ -978,11 +978,11 @@ class VisualizeGraph(Metric):
 
             #want [-2, 2]
             pch = {-2: "o", -1: "8", 0: "h", 1: "+", 2: "D"}
-            for polticalness in range(-2, 3):
-                userIds = self.network.getUserIdsWithSpecificPoliticalness(polticalness)
+            for politicalness in range(-2, 3):
+                userIds = self.network.getUserIdsWithSpecificPoliticalness(politicalness)
                 for uId in userIds:
                     mId = dictionary[uId]
-                    plt.scatter(eigenVectors[mId,0], eigenVectors[mId, 1], pch[polticalness])
+                    plt.scatter(eigenVectors[mId,0], eigenVectors[mId, 1], pch[politicalness])
 
             for row in range(0, len(matrix)):
                 for col in range(0, len(matrix[row])):

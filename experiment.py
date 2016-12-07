@@ -23,12 +23,12 @@ def PLikeBaseOnData(reader, article):
                 oneRow.append(col)
             data.append(oneRow)
 
-    userPolticalness = reader.getPoliticalness()
-    userPolticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
+    userPoliticalness = reader.getPoliticalness()
+    userPoliticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
     source = article.getSource()
     for row in data:
         if row[0] == source:
-            colIndex = userPolticalnessToDataIndex[userPolticalness]
+            colIndex = userPoliticalnessToDataIndex[userPoliticalness]
             return row[0][colIndex]
     raise Exception("Invalid Article Source")
 
@@ -108,12 +108,12 @@ class Experiment(object):
                 evaluation.AliveArticles(),
                 evaluation.DeadArticles(),
                 evaluation.OverallClustering(),
-                evaluation.ClusterPolticalness("-2"),
-                evaluation.ClusterPolticalness("-1"),
-                evaluation.ClusterPolticalness("0"),
-                evaluation.ClusterPolticalness("1"),
-                evaluation.ClusterPolticalness("2"),
-                evaluation.ClusterPolticalness("all"),
+                evaluation.ClusterPoliticalness("-2"),
+                evaluation.ClusterPoliticalness("-1"),
+                evaluation.ClusterPoliticalness("0"),
+                evaluation.ClusterPoliticalness("1"),
+                evaluation.ClusterPoliticalness("2"),
+                evaluation.ClusterPoliticalness("all"),
                 evaluation.LargestConnectedComponent(),
                 evaluation.EigenVectors(),
                 evaluation.MoreEigenVectors(),
@@ -127,7 +127,7 @@ class Experiment(object):
                 evaluation.ModularityWRTFriends(),
                 evaluation.BetweennessWRTFriends(),
                 evaluation.OverallClusteringWRTFriends(),
-                evaluation.ClusterPolticalnessWRTFriends("all"),
+                evaluation.ClusterPoliticalnessWRTFriends("all"),
                 evaluation.EigenVectorsWRTFriends(),
                 evaluation.MoreEigenVectorsWRTFriends(),
             ]

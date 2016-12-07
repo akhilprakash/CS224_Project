@@ -24,5 +24,5 @@ class User(object):
     def __str__(self):
         result = "(UserId = " + str(self.userId) + ", ReadingRate = " + str(
             self.readingRate)
-        result += ", polticalness = " + str(self.polticalness) + ")"
+        result += ", politicalness = " + str(self.politicalness) + ")"
         return result
