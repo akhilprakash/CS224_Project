@@ -17,19 +17,7 @@ from article import Article
 class PLike(object):
     UNIFORM_LIKE_PROB = 0.2
 
-    TRUST = {}
-    with open(data_path('percof-readers-trust.csv')) as f:
-        reader = csv.reader(f, delimiter=",")
-        next(reader, None)  # skip headers
-        for row in reader:
-            source = row[0]
-            TRUST[source] = {
-                -2: row[6],
-                -1: row[5],
-                 0: row[4],
-                +1: row[3],
-                +2: row[2],
-            }
+    TRUST = util.load_trust_data()
 
     @staticmethod
     def uniform(reader, article):
