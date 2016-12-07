@@ -228,7 +228,7 @@ class Network(object):
         return (
             article
             for article in self.articles.itervalues()
-            if not self.userArticleGraph.IsEdge(article)
+            if not self.userArticleGraph.IsEdge(article.articleId, userId)
             and not article.isDead
         )
 

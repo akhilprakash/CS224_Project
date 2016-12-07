@@ -170,7 +170,7 @@ class Experiment(object):
             print_error("matplotlib not available, skipping plots")
 
         for metric in self.metrics:
-            metric.plot(self.network, self.histories[metric])
+            metric.plot(self, self.network, self.histories[metric])
 
 
 def runExperiment(*args, **kwargs):
