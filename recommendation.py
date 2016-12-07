@@ -4,6 +4,7 @@ from __future__ import division
 import heapq
 import collections
 import itertools
+import random
 
 from util import PairsDict
 
@@ -51,7 +52,7 @@ class RecommendBasedOnFriends(Recommender):
             friendsOfR = network.friendGraph.GetNI(r.getUserId()).GetOutEdges()
             articles = collections.defaultdict(int)
             for friend in friendsOfR:
-                articleIds = network.articlesReadByUser(friend)
+                articleIds = network.articlesLikedByUser(friend)
                 for aId in articleIds:
                     if not network.articles[aId].getIsDead():
                         articles[aId] = articles[aId] + 1
@@ -64,12 +65,36 @@ class RecommendBasedOnFriends(Recommender):
         return recommendation
 
 
-class CollaborativeFiltering(Recommender):
-    """Item-item collaborative filtering"""
-    K = 5
+class Instagram(Recommender):
+    """Uniformly shows reader all the articles that their friends liked."""
+    # Potential problems:
+    # shows all articles liked by friends regardless of how long ago that was.
 
     def makeRecommendations(self, network, readers, N=1):
-        # 1. Compute similarities between all unique pairs of articles O(n^2)
+        recs = {}
+        for reader in readers:
+            candidates = [
+                article
+                for friend in network.friendGraph.GetNI(reader.userId).GetOutEdges()
+                for article in network.articlesLikedByUser(friend)
+            ]
+            recs[reader] = random.sample(candidates, N)
+        return recs
+
+
+# FIXME: dont' recommend dead articles
+class CollaborativeFiltering(Recommender):
+    """
+    Item-item collaborative filtering.
+    CF over Facebook likes.
+
+    Notes on CF for binary, positive-only ratings:
+    http://www.slideshare.net/koeverstrep/tutorial-bpocf
+
+    (this is technically latent semantic analysis??)
+    """
+    def makeRecommendations(self, network, readers, N=1):
+        # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
         for articleA, articleB in itertools.combinations(network.articles, 2):
             ratersA = set(network.userArticleGraph.GetNI(articleA).GetOutEdges())
@@ -80,46 +105,21 @@ class CollaborativeFiltering(Recommender):
             # Use Jaccard similarity with correction to prevent divide-by-zero
             sim[articleA, articleB] = (len(ratersA | ratersB) + 1) / (len(ratersA & ratersB) + 1)
 
-        # 2. Compute k-nearest neighbors to the articles liked by the readers
-        # Collect the set of articles liked by the given readers
-        likedArticles = set(
-            article
-            for reader in readers
-            for article in network.userArticleGraph.GetNI(reader.userId).GetOutEdges()
-        )
-        # For each article find KNNs
-
-        # TODO: DO THIS INSTEAD
-        # compute dot product between the user's rating vector and the item-item similarity vector
-        # for each candidate article. For each candidate article, this is basically the sum of the similarities
-        # between the candidate article and the articles that the reader has liked.
-        # Then we should choose the articles with the highest score.
-        # This will sum up exactly as many similarities as the number of articles that the reader has liked.
-        # (this is technically latent semantic analysis??)
-        # http://www.slideshare.net/koeverstrep/tutorial-bpocf
-
         # For each reader:
+        recs = {}
         for reader in readers:
             likedArticles = set(network.userArticleGraph.GetNI(reader.userId).GetOutEdges())
             candidateArticles = list(article for article in network.articles if article not in likedArticles)
 
-            # 2. For each article, compute its k-nearest neighbors in terms of
-            #    similarity among the articles read by the reader
-            knns = {}
-            for article in candidateArticles:
-                knns[article] = heapq.nlargest(likedArticles, lambda other: sim[article, other])
+            # Compute dot product between the user's rating vector and the item-item similarity vector
+            # for each candidate article. For each candidate article, this is basically the sum of the similarities
+            # between the candidate article and the articles that the reader has liked.
+            # This will sum up exactly as many similarities as the number of articles that the reader has liked.
+            # Then we should choose the articles with the highest score.
+            def score(candidate):
+                return sum(sim[candidate, liked] for liked in likedArticles)
+            topN = heapq.nlargest(N, candidateArticles, score)
+            recs[reader.userId] = [network.getArticle(a) for a in topN]
 
-            # 3. Since we are working only with binary ratings (i.e. likes),
-            #    we don't need to "estimate" the rating of the candidate articles,
-            #    since the the k-nearest neighbors are already the recommendations
-            # TODO: limit to just the articles that the reader's friends has liked
-            # TODO: use baseline estimates to de-bias
-            estPLike = {}
-            for article in candidateArticles:
-                estPLike = sum()
+        return recs
 
-
-            # 4. Recommend the articles with the top N estimated ratings for each
-            #    reader.
-
-        raise NotImplementedError
