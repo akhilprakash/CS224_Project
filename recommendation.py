@@ -117,11 +117,11 @@ class CollaborativeFiltering(Recommender):
 
     (this is technically latent semantic analysis??)
 
-    When articles don't have enough likes to compute similarity,
-    we default to a similarity based on their sources.
-
-    When a reader hasn't liked enough articles to compute scores for candidate
-    articles,
+    Edge cases:
+     - When articles don't have enough likes to compute similarity,
+       we default to a similarity based on their sources.
+     - When a reader hasn't liked enough articles to compute scores for candidate
+       articles, we default to content-based recommendations.
     """
 
     TRUST = util.load_trust_data()

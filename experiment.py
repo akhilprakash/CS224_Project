@@ -163,8 +163,9 @@ class Experiment(object):
         """Perform one step of the simulation."""
         readers = self.network.getNextReaders()  # get readers that can read at this time point
 
-        # Introduce a new article
-        self.introduceArticle(i)
+        # Introduce new articles
+        for _ in xrange(self.numRecsPerIteration):
+            self.introduceArticle(i)
 
         # Compute recommendations and "show" them to users
         self.runRecommendation(readers)
