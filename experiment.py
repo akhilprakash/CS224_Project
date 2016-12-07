@@ -144,6 +144,10 @@ class Experiment(object):
     
     def run(self):
         # Create an initial set of articles
+        # (At least as many as we recommend per iteration,
+        # if not several times more.)
+        for _ in xrange(self.numRecsPerIteration * 4):
+            self.introduceArticle(0)
 
         for i in util.visual_xrange(self.num_iterations, use_newlines=False):
             self.step(i)
@@ -153,7 +157,7 @@ class Experiment(object):
         readers = self.network.getNextReaders()  # get readers that can read at this time point
 
         # Introduce a new article
-        article = self.introduceArticle(i)
+        self.introduceArticle(i)
 
         # Compute recommendations and "show" them to users
         self.runRecommendation(readers)
