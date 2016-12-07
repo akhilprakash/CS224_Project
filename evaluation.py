@@ -167,7 +167,9 @@ class Statistics(Metric):
         # Number of times each article was read by a user of each type (probably should sort articles based on average times read
         # cl, l, n, c, cc dicts: {articleID: times read by users of this type}
         plt.figure()
-        plt.plot(cl.keys(), cl.values(), 'rx')
+        plt.plot(cl.keys(), cl.values(), 'bx', l.keys(), l.values(), 'gx', n.keys(), n.values(), 'kx',
+                 c.keys(), c.values(), 'cx', cc.keys(), cc.values(), 'rx')
+        plt.legend(["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"])
         plt.xlabel("Article")
         plt.ylabel("Number of Times Article Liked")
         plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters))
