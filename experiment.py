@@ -4,54 +4,40 @@ import json
 import random
 from collections import defaultdict
 
+import numpy as np
+
 import evaluation
 import recommendation
 import util
 from articleGenerator import ArticleGenerator
 from network import Network
-from util import data_path, out_path, print_error
+from util import data_path, out_path, print_error, with_prob
 
 
 class PLike(object):
-    @staticmethod
-    def basedOnData(reader, article):
-        data = []
-        with open(data_path("percof-readers-trust.csv")) as f:
-            csvreader = csv.reader(f, delimiter=",")
-            for row in csvreader:
-                oneRow = []
-                for col in row:
-                    oneRow.append(col)
-                data.append(oneRow)
+    TRUST = {}
+    with open(data_path('percof-readers-trust.csv')) as f:
+        reader = csv.reader(f, delimiter=",")
+        next(reader, None)  # skip headers
+        for row in reader:
+            source = row[0]
+            TRUST[source] = {
+                -2: row[6],
+                -1: row[5],
+                 0: row[4],
+                +1: row[3],
+                +2: row[2],
+            }
 
-        userPoliticalness = reader.getPoliticalness()
-        userPoliticalnessToDataIndex = {2 : 2, 1 : 3, 0 : 4, -1 : 5, -2 : 6}
-        source = article.getSource()
-        for row in data:
-            if row[0] == source:
-                colIndex = userPoliticalnessToDataIndex[userPoliticalness]
-                return row[0][colIndex]
-        raise Exception("Invalid Article Source")
+    UNIFORM_LIKE_PROB = 0.2
 
     @staticmethod
-    def bySource(reader, article):
-        if reader.getPoliticalness() < 0 and article.getSource() == Experiment.SOURCES[2]:
-            return .9
-        if reader.getPoliticalness() == 0 and article.getSource() == Experiment.SOURCES[1]:
-            return .8
-        return PLike(reader, article)
+    def empirical(reader, article):
+        return PLike.TRUST[article.source][reader.politicalness]
 
     @staticmethod
-    def static(reader, article):
-        diff = abs(reader.getPoliticalness() - article.getPoliticalness())
-        diffToProb = {
-            0: .6,
-            1: .4,
-            2: .2,
-            3: .1,
-            4: .1,
-        }
-        return diffToProb[diff]
+    def uniform(reader, article):
+        return PLike.UNIFORM_LIKE_PROB
 
 
 class Experiment(object):
@@ -62,22 +48,16 @@ class Experiment(object):
     def __init__(self,
                  num_iterations=500,
                  all_analyses=False,
-                 recommender='RandomRecommender',
+                 recommender='Random',
                  networkInitType='1',
-                 pLikeMethod='basedOnData',
+                 pLikeMethod='empirical',
                  numRecsPerIteration=1,
-                 force=True,  # old
-                 simulation="simulate",  # old
-                 help0DegreeUsers=False,  # old
-                 help0DegreeArticles=False,  # old
-                 popular=True,  #old
-                 ) :
+                 ):
         """
         Constructor for Experiment.
 
         :param num_iterations: int number of iterations to run in this experiment.
         :param all_analyses: True to run all the analyses, False if not
-        :param simulation: IGNORED
         :param recommender: string name of the recommender class to use as defined in recommender.py
         :param pLikeMethod: method name of the PLike version to use
         """
@@ -86,12 +66,12 @@ class Experiment(object):
         self.all_analyses = all_analyses
         self.numRecsPerIteration = numRecsPerIteration
         self.articleGenerators = []
-        self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.1, .3, 0, .3, .1]))
+        self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.15, .35, 0, .35, .15]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
         self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network(networkInitType)
         self.pLike = getattr(PLike, pLikeMethod)
-        self.recommender = vars(recommendation)[recommender]()
+        self.recommender = getattr(recommendation, recommender)()
         self.metrics = []
         if self.all_analyses:
             self.metrics = [
@@ -139,13 +119,9 @@ class Experiment(object):
                             #evaluation.Statistics()]
         self.histories = defaultdict(list)
 
-    def createArticle(self):
-        idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
-        articleGen = self.articleGenerators[idx]
-        return articleGen.createArticle()
-
     def introduceArticle(self, iterations):
-        article = self.createArticle()
+        articleGen = np.random.choice(self.articleGenerators, p=self.WEIGHTS_SOURCES)
+        article = articleGen.createArticle()
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         return article
@@ -211,17 +187,17 @@ def runExperiment(*args, **kwargs):
 
     Example usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(num_iterations=10, recommender='RandomRecommender')
+        >>> experiment.runExperiment(num_iterations=10, recommender='Random')
 
     To save you the time of opening a Python console, you can do this in one line from the shell:
-        # python -c "import experiment; experiment.runExperiment(num_iterations=10, recommender='RandomRecommender')"
+        # python -c "import experiment; experiment.runExperiment(num_iterations=10, recommender='Random')"
     """
     exp = Experiment(*args, **kwargs)
     exp.run()
     exp.saveResults()
 
     # Save parameters
-    with open(out_path('parameters.json'), 'w') as fp:
+    with open(out_path('parameters.json'), 'wb') as fp:
         json.dump(kwargs, fp)
 
 

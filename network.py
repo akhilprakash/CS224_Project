@@ -9,6 +9,7 @@ import collections
 import pdb
 import numpy as np
 
+
 def getMax(NIdToDistH):
     nodeId = -1
     longestPath = -1
@@ -17,6 +18,7 @@ def getMax(NIdToDistH):
             longestPath = NIdToDistH[item]
             nodeId = item
     return (item, longestPath)
+
 
 class Network(object):
 
@@ -46,17 +48,17 @@ class Network(object):
         elif initialize == "2":
             self.initializeUsers()
         elif initialize == "3":
-            self.intializeUsersAccordingToFriends()
+            self.initializeUsersAccordingToFriends()
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
         for newNode in self.friendGraph.GetNI(nodeId).GetOutEdges():
             #either pass on political, political - 1, oor poltial + 1
             weights = [.3 + depth, .5 + depth, .3 + depth]
-            idx = util.generatePoliticalness(weights)
+            idx = util.weighted_choice(weights)
             if political == 2 or political == -2:
                 weights = [.5 + depth, .5 + depth]
-                idx = util.generatePoliticalness(weights)
+                idx = util.weighted_choice(weights)
                 if idx == 0:
                     self.users[newNode].setPoliticalness(political)
                 else:
@@ -153,7 +155,7 @@ class Network(object):
         # initialize users independent of their friends
         indexToPoliticalness = {0: -2, 1: -1, 2: 0, 3: 1, 4: 2}
         for node in self.friendGraph.Nodes():
-            index = util.generatePoliticalness(self.POLITICALNESS_DISTRIBUTION_FOR_USERS)
+            index = util.weighted_choice(self.POLITICALNESS_DISTRIBUTION_FOR_USERS)
             politicalness = indexToPoliticalness[index]
             user = User(politicalness, node.GetId())
             self.addUser(user)
@@ -165,7 +167,7 @@ class Network(object):
         print political
         return political
 
-    def intializeUsersAccordingToFriends(self):
+    def initializeUsersAccordingToFriends(self):
         #intilaize users randomly
         self.initializeUsers()
         self.getPoliticalAllUsers()
@@ -179,7 +181,7 @@ class Network(object):
                     userFriend = self.getUser(friend)
                     potlicalnessOfFriends[userFriend.getPoliticalness()+2] = potlicalnessOfFriends[userFriend.getPoliticalness()+2] + 1
                 user = self.getUser(userId)
-                idx = util.generatePoliticalness(potlicalnessOfFriends)
+                idx = util.weighted_choice(potlicalnessOfFriends)
                 if potlicalnessOfFriends[idx] == 0:
                     pdb.set_trace()
                 user.setPoliticalness(idx -2)
@@ -218,34 +220,20 @@ class Network(object):
             readers.append(sortedResults[i][0])
         return readers
 
+    def getArticles(self):
+        """Iterator over articles that aren't dead."""
+        return (article for article in self.articles.itervalues() if not article.isDead)
+
     def getRandomArticles(self, N):
-        aIds = []
-        for a in self.articles.keys():
-            if not self.articles[a].getIsDead():
-                aIds.append(a)
-        return [self.articles[a] for a in random.sample(aIds, N)]
+        return random.sample(list(self.getArticles()), N)
 
     def getUser(self, userId):
         return self.users[userId]
 
-    def getUsersWithDegree0(self):
-        users = []
-        for user in self.users.itervalues():
-            if self.userArticleGraph.GetNI(user.getUserId()).GetOutDeg() == 0:
-                users.append(user)
-        return users
-
-    def getArticlesWithDegree0(self):
-        articles = []
-        for article in self.articles.itervalues():
-            if self.userArticleGraph.GetNI(article.getArticleId()).GetOutDeg() == 0:
-                articles.append(article)
-        return articles
-
     def articlesLikedByUser(self, userId):
         """Iterator over the articles liked by the given user."""
         return (
-            self.articles[articleId]
-            for articleId in self.userArticleGraph.GetNI(userId).GetOutEdges()
-            if not self.articles[articleId].isDead
+            self.articles[i]
+            for i in self.userArticleGraph.GetNI(userId).GetOutEdges()
+            if not self.articles[i].isDead
         )

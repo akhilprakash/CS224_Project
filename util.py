@@ -1,28 +1,22 @@
 from __future__ import division
-import random
+
 import csv
+import os
+import random
 import sys
 import time
-import os
+
+import numpy as np
 
 
-def generatePoliticalness(weights):
-    	rand = random.random()
-    	summation = sum(weights)
-        if summation == 0:
-            for i in range(0, len(weights)):
-                weights[i] = 1.0/len(weights)
-        else:
-        	for i in range(0, len(weights)):
-        		weights[i] = weights[i]/ (summation * 1.0)
-    	cumsum = 0
-    	for i in range(0, len(weights)):
-            cumsum = cumsum + weights[i]
-            if rand < cumsum:
-                return i
-    		
-    	#should not reach here
-    	raise Exception("Should not reach here")
+def weighted_choice(weights):
+    weights = np.asarray(weights)
+    weights /= np.sum(weights)
+    return np.random.choice(range(len(weights)), p=weights)
+
+
+def with_prob(p):
+    return random.random() < p
 
 
 def writeCSV(fileName, value):

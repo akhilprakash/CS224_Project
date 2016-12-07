@@ -1,6 +1,23 @@
 """
 Temporary holding place for code
 """
+
+
+def getUsersWithDegree0(self):
+    users = []
+    for user in self.users.itervalues():
+        if self.userArticleGraph.GetNI(user.getUserId()).GetOutDeg() == 0:
+            users.append(user)
+    return users
+
+def getArticlesWithDegree0(self):
+    articles = []
+    for article in self.articles.itervalues():
+        if self.userArticleGraph.GetNI(article.getArticleId()).GetOutDeg() == 0:
+            articles.append(article)
+    return articles
+
+
 def help0DegreeArticles(self, iterations, users, N=4):
     if iterations % N == 0:
         articles = self.network.getArticlesWithDegree0()
