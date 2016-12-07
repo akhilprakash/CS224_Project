@@ -6,8 +6,6 @@ import evaluation
 import recommendation
 from util import print_error, data_path, out_path
 from collections import defaultdict
-from itertools import izip
-import pdb
 import csv
 import datetime
 import json
@@ -57,7 +55,7 @@ class Experiment(object):
 
     def __init__(self,
                  num_iterations=500,
-                 all_analyses=True,
+                 all_analyses=False,
                  simulation="simulate",
                  recommender='RandomRecommender',
                  initialize="1",
@@ -80,7 +78,7 @@ class Experiment(object):
         self.force = force
         self.shouldHelp0DegreeUsers = help0DegreeUsers
         self.shouldHelp0DegreeArticles = help0DegreeArticles
-        self.plike = PLikeBaseOnData if plike == "data" else ( PLikeBySource if "source" else pLike)
+        self.plike = PLikeBaseOnData if plike == "data" else (PLikeBySource if "source" else plike)
         self.popular = popular
         self.initialize = initialize
         self.articleGenerators = []
@@ -146,15 +144,6 @@ class Experiment(object):
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         return article
-
-    def saveParameters(self):
-        params = []
-        for key, value in vars(self).items():
-            if key in ['num_iterations','all_analyses','simulation', \
-            'force', 'shouldHelp0DegreeUsers', 'plike', 'popular', 'initialize', 'shouldHelp0DegreeArticles', \
-            'recommender']:
-                params.append((key, value))
-        util.writeCSV(out_path("parameters"), params)
 
     def triadicClosureBasedOnFriends(self, iterations, force = True, plike = PLikeBaseOnData):
         article = self.introduceArticle(iterations)
@@ -352,9 +341,12 @@ def runExperiment(*args, **kwargs):
         #> python
     """
     exp = Experiment(*args, **kwargs)
-    exp.saveParameters()
     exp.runAllSimulation()
     exp.saveResults()
+
+    # Save parameters
+    with open(out_path('parameters.json'), 'w') as fp:
+        json.dump(kwargs, fp)
 
 
 if __name__ == "__main__":
