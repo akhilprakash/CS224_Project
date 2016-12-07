@@ -1,14 +1,15 @@
-import util
-import random
-from network import Network
-from articleGenerator import ArticleGenerator
-import evaluation
-import recommendation
-from util import print_error, data_path, out_path
-from collections import defaultdict
 import csv
 import datetime
 import json
+import random
+from collections import defaultdict
+
+import evaluation
+import recommendation
+import util
+from articleGenerator import ArticleGenerator
+from network import Network
+from util import data_path, out_path, print_error
 
 
 class PLike(object):

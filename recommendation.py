@@ -99,7 +99,8 @@ class CollaborativeFiltering(Recommender):
             # Then we should choose the articles with the highest score.
             def score(candidate):
                 return sum(sim[candidate, liked] for liked in likedArticles)
-            recs[reader.userId] = heapq.nlargest(N, candidateArticles, score)
+            topN = heapq.nlargest(N, candidateArticles, score)
+            recs[reader.userId] = [network.getArticle(a) for a in topN]
 
         return recs
 
