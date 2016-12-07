@@ -62,7 +62,7 @@ class Experiment(object):
     def __init__(self,
                  num_iterations=500,
                  all_analyses=False,
-                 recommender='RandomRecommender',
+                 recommender='Random',
                  networkInitType='1',
                  pLikeMethod='basedOnData',
                  numRecsPerIteration=1,
@@ -211,10 +211,10 @@ def runExperiment(*args, **kwargs):
 
     Example usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(num_iterations=10, recommender='RandomRecommender')
+        >>> experiment.runExperiment(num_iterations=10, recommender='Random')
 
     To save you the time of opening a Python console, you can do this in one line from the shell:
-        # python -c "import experiment; experiment.runExperiment(num_iterations=10, recommender='RandomRecommender')"
+        # python -c "import experiment; experiment.runExperiment(num_iterations=10, recommender='Random')"
     """
     exp = Experiment(*args, **kwargs)
     exp.run()

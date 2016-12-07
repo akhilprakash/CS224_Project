@@ -2,16 +2,11 @@
 """
 from __future__ import division
 import heapq
-import collections
 import itertools
 import random
 
 from util import PairsDict
 
-
-# TODO: Uniform-among-friends-liked-articles Null Recommender
-# TODO: don't recommend dead articles
-# TODO: LSA-based recommender??
 
 class Recommender(object):
     def makeRecommendations(self, network, readers, N=1):
@@ -27,49 +22,38 @@ class Recommender(object):
         raise NotImplementedError
 
 
-class RandomRecommender(Recommender):
+class Random(Recommender):
+    """
+    Recommend articles chosen uniformly from all the articles.
+    """
     def makeRecommendations(self, network, readers, N=1):
         return {r.getUserId(): network.getRandomArticles(N) for r in readers}
 
 
-class PopularRecommender(Recommender):
+class Popular(Recommender):
+    """
+    Recommend the same set of globally popular articles to every reader.
+    """
     def makeRecommendations(self, network, readers, N=1):
-        # Every is recommended the same most popular articles
         articles = []
         for a in network.articles.itervalues():
             if not a.getIsDead():
                 articles.append(a)
-        popular = heapq.nlargest(N, articles,
-                                 key=lambda a: network.userArticleGraph.GetNI(a.getArticleId()).GetDeg())
+
+        def numLikes(article):
+            return network.userArticleGraph.GetNI(article.getArticleId()).GetDeg()
+        popular = heapq.nlargest(N, articles, numLikes)
         return {r.getUserId(): popular for r in readers}
 
 
-class RecommendBasedOnFriends(Recommender):
-    #reocmmend what is most poopular based on friends
-    def makeRecommendations(self, network, readers, N=1):
-        recommendation = {}
-        for r in readers:
-            friendsOfR = network.friendGraph.GetNI(r.getUserId()).GetOutEdges()
-            articles = collections.defaultdict(int)
-            for friend in friendsOfR:
-                articleIds = network.articlesLikedByUser(friend)
-                for aId in articleIds:
-                    if not network.articles[aId].getIsDead():
-                        articles[aId] = articles[aId] + 1
-            sort = sorted(articles.items(), key = lambda x: x[1], reverse = True)
-            recommend = sort[0:min(len(sort), N)]
-            article = []
-            for aid, _ in recommend:
-                article.append(network.getArticle(aid))
-            recommendation[r.getUserId()] = article
-        return recommendation
-
-
 class Instagram(Recommender):
-    """Uniformly shows reader all the articles that their friends liked."""
-    # Potential problems:
-    # shows all articles liked by friends regardless of how long ago that was.
+    """
+    Uniformly shows reader all the articles that their friends liked.
 
+    Potential problems:
+    shows all articles liked by friends regardless of how long ago that was.
+    (this might be taken care of by the isDead check now)
+    """
     def makeRecommendations(self, network, readers, N=1):
         recs = {}
         for reader in readers:
@@ -82,7 +66,10 @@ class Instagram(Recommender):
         return recs
 
 
-# FIXME: dont' recommend dead articles
+# TODO: LSA-based recommender??
+
+
+# FIXME: don't recommend dead articles
 class CollaborativeFiltering(Recommender):
     """
     Item-item collaborative filtering.
@@ -108,8 +95,13 @@ class CollaborativeFiltering(Recommender):
         # For each reader:
         recs = {}
         for reader in readers:
-            likedArticles = set(network.userArticleGraph.GetNI(reader.userId).GetOutEdges())
-            candidateArticles = list(article for article in network.articles if article not in likedArticles)
+            likedArticles = {article.articleId for article in network.articlesLikedByUser(reader)}
+            candidateArticles = [
+                article
+                for article in network.articles.itervalues()
+                if article.articleId not in likedArticles
+                and not article.isDead
+            ]
 
             # Compute dot product between the user's rating vector and the item-item similarity vector
             # for each candidate article. For each candidate article, this is basically the sum of the similarities
@@ -117,9 +109,12 @@ class CollaborativeFiltering(Recommender):
             # This will sum up exactly as many similarities as the number of articles that the reader has liked.
             # Then we should choose the articles with the highest score.
             def score(candidate):
-                return sum(sim[candidate, liked] for liked in likedArticles)
-            topN = heapq.nlargest(N, candidateArticles, score)
-            recs[reader.userId] = [network.getArticle(a) for a in topN]
+                return sum(sim[candidate.articleId, liked] for liked in likedArticles)
+            recs[reader.userId] = heapq.nlargest(N, candidateArticles, score)
 
         return recs
 
+
+class LFA(Recommender):
+    """Latent Factor Analysis (Netflix winner style)"""
+    pass
