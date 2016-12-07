@@ -143,6 +143,8 @@ class Experiment(object):
                 article.setIsDead(True)
     
     def run(self):
+        # Create an initial set of articles
+
         for i in util.visual_xrange(self.num_iterations, use_newlines=False):
             self.step(i)
 

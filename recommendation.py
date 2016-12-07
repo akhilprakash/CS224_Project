@@ -83,21 +83,23 @@ class CollaborativeFiltering(Recommender):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
         for articleA, articleB in itertools.combinations(network.getArticles(), 2):
-            ratersA = set(network.userArticleGraph.GetNI(articleA).GetOutEdges())
-            ratersB = set(network.userArticleGraph.GetNI(articleB).GetOutEdges())
+            a = articleA.articleId
+            b = articleB.articleId
+            ratersA = set(network.userArticleGraph.GetNI(a).GetOutEdges())
+            ratersB = set(network.userArticleGraph.GetNI(b).GetOutEdges())
             # TODO: make sure that new articles are handled properly here
             # so that we don't need to do anything special to initialize new
             # articles -- they should be recommend to new users.
 
             # Use Jaccard similarity with correction to prevent divide-by-zero
-            sim[articleA, articleB] = (len(ratersA | ratersB) + 1) / (len(ratersA & ratersB) + 1)
+            sim[a, b] = (len(ratersA | ratersB) + 1) / (len(ratersA & ratersB) + 1)
 
         # For each reader:
         recs = {}
         for reader in readers:
             likedArticles = {
                 article.articleId
-                for article in network.articlesLikedByUser(reader)
+                for article in network.articlesLikedByUser(reader.userId)
             }
             candidateArticles = [
                 article
