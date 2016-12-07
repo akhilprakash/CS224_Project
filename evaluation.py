@@ -14,8 +14,9 @@ matplotlib.use('Agg')
 
 try:
     import matplotlib.pyplot as plt
+    has_matplotlib = True
 except ImportError:
-    pass
+    has_matplotlib = False
 import scipy
 import numpy
 import collections

@@ -89,6 +89,15 @@ class CollaborativeFiltering(Recommender):
         )
         # For each article find KNNs
 
+        # TODO: DO THIS INSTEAD
+        # compute dot product between the user's rating vector and the item-item similarity vector
+        # for each candidate article. For each candidate article, this is basically the sum of the similarities
+        # between the candidate article and the articles that the reader has liked.
+        # Then we should choose the articles with the highest score.
+        # This will sum up exactly as many similarities as the number of articles that the reader has liked.
+        # (this is technically latent semantic analysis??)
+        # http://www.slideshare.net/koeverstrep/tutorial-bpocf
+
         # For each reader:
         for reader in readers:
             likedArticles = set(network.userArticleGraph.GetNI(reader.userId).GetOutEdges())
