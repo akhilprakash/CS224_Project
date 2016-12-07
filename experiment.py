@@ -1,6 +1,6 @@
-import csv
 import datetime
 import json
+import os
 import random
 from collections import defaultdict
 
@@ -9,9 +9,9 @@ import numpy as np
 import evaluation
 import recommendation
 import util
-from network import Network
-from util import data_path, out_path, print_error, with_prob
 from article import Article
+from network import Network
+from util import data_path, out_path, print_error
 
 
 class PLike(object):
@@ -37,8 +37,8 @@ class Experiment(object):
     WEIGHTS_SOURCES = [1.0 / len(SOURCES)] * len(SOURCES)  # uniform weights
 
     def __init__(self,
-                 num_iterations=100,
-                 all_analyses=False,
+                 numIterations=100,
+                 allAnalyses=False,
                  recommender='Random',
                  networkInitType='1',
                  pLikeMethod='empirical',
@@ -48,21 +48,22 @@ class Experiment(object):
         """
         Constructor for Experiment.
 
-        :param num_iterations: int number of iterations to run in this experiment.
-        :param all_analyses: True to run all the analyses, False if not
+        :param numIterations: int number of iterations to run in this experiment.
+        :param allAnalyses: True to run all the analyses, False if not
         :param recommender: string name of the recommender class to use as defined in recommender.py
         :param pLikeMethod: method name of the PLike version to use: 'uniform'|'empirical'
         :param friendGraphFile: filename of the friend graph CSV file to use
         """
         self.start_time = datetime.datetime.now()
-        self.num_iterations = num_iterations
-        self.all_analyses = all_analyses
+        self.numIterations = numIterations
+        self.allAnalyses = allAnalyses
         self.numRecsPerIteration = numRecsPerIteration
+        self.networkInitType = networkInitType
         self.network = Network(data_path(friendGraphFile), networkInitType)
+        self.pLikeMethod = pLikeMethod
         self.pLike = getattr(PLike, pLikeMethod)
         self.recommender = getattr(recommendation, recommender)()
-        self.metrics = []
-        if self.all_analyses:
+        if self.allAnalyses:
             self.metrics = [
                 evaluation.ReadingDistribution(),
                 evaluation.PathsBetweenPoliticalnesses(),
@@ -107,6 +108,22 @@ class Experiment(object):
             self.metrics = [evaluation.GraphViz(), evaluation.Statistics()]
         self.histories = defaultdict(list)
 
+    def _parameters(self, delimiter):
+        return delimiter.join([
+            "%s Recommender" % self.recommender.__class__.__name__,
+            "%s Political Preference" % self.networkInitType.title(),
+            "%s PLike" % self.pLikeMethod.title(),
+            "%d Iterations" % self.numIterations,
+        ])
+
+    @property
+    def parameters(self):
+        return self._parameters(delimiter=', ')
+
+    def out_path(self, filename):
+        subdir = self._parameters(delimiter='.').replace(' ', '')
+        return out_path(filename, subdir=subdir)
+
     def introduceArticle(self, iterations):
         # Create an article from a random source
         article = Article(np.random.choice(self.SOURCES, p=self.WEIGHTS_SOURCES))
@@ -125,7 +142,7 @@ class Experiment(object):
 
     def runAnalysis(self, iterations):
         for metric in self.metrics:
-            self.histories[metric].append(metric.measure(self.network, iterations))
+            self.histories[metric].append(metric.measure(self, self.network, iterations))
 
     def killArticles(self, iterations):
         for article in self.network.articles.itervalues():
@@ -139,7 +156,7 @@ class Experiment(object):
         for _ in xrange(self.numRecsPerIteration * 4):
             self.introduceArticle(0)
 
-        for i in util.visual_xrange(self.num_iterations, use_newlines=False):
+        for i in util.visual_xrange(self.numIterations, use_newlines=False):
             self.step(i)
 
     def step(self, i):
@@ -161,7 +178,7 @@ class Experiment(object):
     def saveResults(self):
         # Save results
         for metric in self.metrics:
-            metric.save(self.histories[metric])
+            metric.save(self, self.histories[metric])
 
         # Try to plot
         try:
@@ -181,17 +198,17 @@ def runExperiment(*args, **kwargs):
 
     Example usage in the Python console:
         >>> import experiment
-        >>> experiment.runExperiment(num_iterations=10, recommender='Random')
+        >>> experiment.runExperiment(numIterations=10, recommender='Random')
 
     To save you the time of opening a Python console, you can do this in one line from the shell:
-        # python -c "import experiment; experiment.runExperiment(num_iterations=10, recommender='Random')"
+        python -c "import experiment; experiment.runExperiment(numIterations=10, recommender='Random')"
     """
     exp = Experiment(*args, **kwargs)
     exp.run()
     exp.saveResults()
 
     # Save parameters
-    with open(out_path('parameters.json'), 'wb') as fp:
+    with open(exp.out_path('parameters.json'), 'wb') as fp:
         json.dump(kwargs, fp)
 
 
