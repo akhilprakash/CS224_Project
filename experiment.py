@@ -54,6 +54,7 @@ class Experiment(object):
                  recommender='Random',
                  networkInitType='1',
                  pLikeMethod='empirical',
+                 friendGraphFile='zacharys.csv',
                  numRecsPerIteration=1,
                  ):
         """
@@ -63,12 +64,13 @@ class Experiment(object):
         :param all_analyses: True to run all the analyses, False if not
         :param recommender: string name of the recommender class to use as defined in recommender.py
         :param pLikeMethod: method name of the PLike version to use: 'uniform'|'empirical'
+        :param friendGraphFile: filename of the friend graph CSV file to use
         """
         self.start_time = datetime.datetime.now()
         self.num_iterations = num_iterations
         self.all_analyses = all_analyses
         self.numRecsPerIteration = numRecsPerIteration
-        self.network = Network(networkInitType)
+        self.network = Network(data_path(friendGraphFile), networkInitType)
         self.pLike = getattr(PLike, pLikeMethod)
         self.recommender = getattr(recommendation, recommender)()
         self.metrics = []

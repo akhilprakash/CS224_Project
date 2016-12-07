@@ -1,13 +1,9 @@
 import snap
-import math
-import scipy.special
 import util
 from user import User
 import random
 import os
-import collections
 import pdb
-import numpy as np
 
 
 def getMax(NIdToDistH):
@@ -34,15 +30,13 @@ class Network(object):
             maxNodeId = max(node.GetId(), maxNodeId)
         return maxNodeId
 
-    def __init__(self, initialize):
+    def __init__(self, friendGraphFile, initialize):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "zacharys.csv"), 0, 1, ",")
-        #snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
+        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
-        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "zacharys.csv"), 0, 1, ",")
-        #snap.LoadEdgeList(snap.PUNGraph, os.path.join("data", "stackoverflow-Java-small.txt"), 0, 1)
+        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
         if initialize == "1":
             self.initializeUsersBasedOn2Neg2()
         elif initialize == "2":
