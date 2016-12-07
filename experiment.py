@@ -9,6 +9,9 @@ from collections import defaultdict
 from itertools import izip
 import pdb
 import csv
+import datetime
+import json
+
 
 def PLikeBaseOnData(reader, article):
     data = []
@@ -70,6 +73,7 @@ class Experiment(object):
         :param all_analyses: True to run all the analyses, False if not
         :param recommender: string name of the recommender class to use as defined in recommender.py
         """
+        self.start_time = datetime.datetime.now()
         self.num_iterations = num_iterations
         self.all_analyses = all_analyses
         self.simulation = simulation
@@ -128,10 +132,9 @@ class Experiment(object):
                 evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
-            self.metrics = [evaluation.ReadingDistribution(self.network.userArticleGraph, "userArticleGraph")]
+            self.metrics = [evaluation.ReadingDistribution()]
                             #evaluation.Statistics()]
         self.histories = defaultdict(list)
-        #self.writeParametersToCSV()
 
     def createArticle(self):
         idx = util.generatePoliticalness(self.WEIGHTS_SOURCES)
@@ -144,7 +147,7 @@ class Experiment(object):
         self.network.addArticle(article)
         return article
 
-    def writeParametersToCSV(self):
+    def saveParameters(self):
         params = []
         for key, value in vars(self).items():
             if key in ['num_iterations','all_analyses','simulation', \
@@ -152,7 +155,6 @@ class Experiment(object):
             'recommender']:
                 params.append((key, value))
         util.writeCSV(out_path("parameters"), params)
-
 
     def triadicClosureBasedOnFriends(self, iterations, force = True, plike = PLikeBaseOnData):
         article = self.introduceArticle(iterations)
@@ -181,7 +183,6 @@ class Experiment(object):
             self.help0DegreeArticles(iterations, self.network.users.values())
         self.runAnalysis(iterations)
 
-
     def randomRandomCompleteTriangles(self, iterations, plike=PLike):
         article = self.introduceArticle(iterations)
         randReaders = random.sample(self.network.users.keys(), 1)
@@ -205,7 +206,7 @@ class Experiment(object):
                 rand = random.sample(users, 1)
                 for r in rand:
                     self.network.addEdge(self.network.users[r], article)
-        runRecommendation(randReaders, plike)
+        self.runRecommendation(randReaders, plike)
         if self.shouldHelp0DegreeUsers:
             self.help0DegreeUsers(iterations, article)
         if self.shouldHelp0DegreeArticles:
@@ -228,7 +229,6 @@ class Experiment(object):
                     probLike = plike(u, a)
                     if random.random() < probLike:
                         self.network.addEdge(u, a)
-
 
     def forceConnectedGraph(self, iterations, article):
         if iterations == 0:
@@ -335,7 +335,7 @@ class Experiment(object):
             print_error("matplotlib not available, skipping plots")
 
         for metric in self.metrics:
-            metric.plot(self.histories[metric])
+            metric.plot(self.network, self.histories[metric])
 
 
 def runExperiment(*args, **kwargs):
@@ -347,9 +347,12 @@ def runExperiment(*args, **kwargs):
     Example usage in the Python console:
         >>> import experiment
         >>> experiment.runExperiment(all_analyses=False, num_iterations=10, simulation="recc", recommender='RandomRecommender')
+
+    To save you the time of opening a Python console, you can do this from the shell:
+        #> python
     """
     exp = Experiment(*args, **kwargs)
-    exp.writeParametersToCSV()
+    exp.saveParameters()
     exp.runAllSimulation()
     exp.saveResults()
 

@@ -77,23 +77,33 @@ def print_error(s):
     print >>sys.stderr, s
 
 
+DATA_BASE_DIRECTORY = 'data'
+OUTPUT_BASE_DIRECTORY = 'out'
+
+
+# Warning:
+# This is only defined at module load time, which means that running two
+# experiments in the same session without reloading this module will clobber
+# the output data of the first experiment.
+timestamp = time.strftime("%Y-%m-%d-%H-%M")
+
+
+def out_path(filename, subfolder=None):
+    """
+    Returns a path for a new output file in the format:
+        out/YY-MM-DD-hh-mm/[subfolder/]filename
+    """
+    output_dir = os.path.join(OUTPUT_BASE_DIRECTORY, timestamp)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print_error('Created directory ' + output_dir)
+    if subfolder is not None:
+        output_dir = os.path.join(output_dir, subfolder)
+    return os.path.join(output_dir, filename)
+
+
 def data_path(filename):
-    return os.path.join('data', filename)
-
-now = time.strftime("%c")
-def out_path(filename, subfolder=""):
-    if subfolder == "":
-        if not os.path.exists('out ' + str(now).replace(":", "")):
-            print_error('Created `out` directory for result files.')
-            os.mkdir('out ' + str(now).replace(":", ""))
-
-        return os.path.join('out ' + str(now).replace(":", ""), filename)
-    else:
-        if not os.path.exists('out ' + str(now).replace(":", "") + "/" + subfolder):
-            print_error('Created out' + subfolder +' directory for result files.')
-            os.makedirs('out ' + str(now).replace(":", "")+ "/" + subfolder)
-
-        return os.path.join('out ' + str(now).replace(":", "")+ "/" + subfolder, filename)
+    return os.path.join(DATA_BASE_DIRECTORY, filename)
 
 
 class PairsDict(dict):
