@@ -13,6 +13,12 @@ import matplotlib
 matplotlib.use('Agg')
 
 try:
+    import networkx as nx
+except ImportError:
+    print 'install networkx library'
+    pass
+
+try:
     import matplotlib.pyplot as plt
 except ImportError:
     pass
@@ -153,6 +159,23 @@ class Statistics(Metric):
         pass
         util.writeCSV(out_path("statistics"), history)
 
+class GraphViz(Metric):
+    """
+    Visualize graph
+    """
+
+    def measure(self, network, iterations):
+        print 'stats'
+        pass
+
+
+    def plot(self, history):
+        pass
+
+
+    def save(self, history):
+        pass
+        util.writeCSV(out_path("statistics"), history)
 
 
 class ReadingDistribution(Metric):

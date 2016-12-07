@@ -242,32 +242,15 @@ class Experiment(object):
         article = self.introduceArticle(iterations)
         # self.forceConnectedGraph(iterations, article)
 
-        '''
-        for reader in readers:  # ask each reader if like it or not
-            probLike = self.PLike(reader, article)
-            if random.random() < probLike:
-                self.network.addEdge(reader, article)
-        '''
-
         # Compute recommendations and "show" them to users
         self.runRecommendation(readers, plike)
-        '''
-        # On every third iteration, "show" the readers the top 5 most popular articles
-        if iterations % 3 == 0:
-            articleDeg = evaluation.getArticleDegreeDistribution(self.network, 'alive')
-            sortedDeg = sorted(articleDeg, key=lambda x: x[1], reverse=True)
-            topFive = sortedDeg[0:5]
-            for (aId, _) in topFive:
-                article = self.network.getArticle(aId)
-                for reader in readers:
-                    probLike = self.PLike(reader, article)
-                    if random.random() < probLike:
-                        self.network.addEdge(reader, article)
-        '''
+
         if self.shouldHelp0DegreeUsers:
             self.help0DegreeUsers(iterations, article)
         if self.shouldHelp0DegreeArticles:
             self.help0DegreeArticles(iterations, self.network.users.values())
+
+        # Analyze resulting graph at this iteration
         self.runAnalysis(iterations)
 
 
