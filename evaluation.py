@@ -136,18 +136,21 @@ class Statistics(Metric):
 
         print self.name
         plt.figure()
-        # numLiked_sorted = sorted(numLiked.items(), key=lambda x: x[1])
-        plt.plot(range(0, 34), sorted(numLiked.values()))
+        plt.plot(range(0, len(numLiked.keys())), sorted(numLiked.values()))
         plt.xlabel("Ordered Users")
         plt.ylabel("Number of Articles Liked")
         plt.title("Number of Articles Liked By Each User")
-        # make this a mosaic plot later
         plt.savefig(out_path(self.safe_name + " NumArticlesLiked" + ".png"))
         plt.close()
 
 
-
-
+        plt.figure()
+        plt.plot(range(0, len(numLiked.keys())), sorted(numLiked.values()))
+        plt.xlabel("Ordered Articles")
+        plt.ylabel("Number of Times Article Liked")
+        plt.title("Number of Articles Liked By Each User")
+        plt.savefig(out_path(self.safe_name + " NumArticlesLiked" + ".png"))
+        plt.close()
 
         # Number of users that read each article
         # Types of users that read each article (skewedness in distribution in types of user that read each article?)
