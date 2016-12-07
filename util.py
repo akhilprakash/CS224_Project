@@ -38,11 +38,11 @@ def load_trust_data():
         for row in reader:
             source = row[0]
             trust[source] = {
-                -2: row[6],
-                -1: row[5],
-                0: row[4],
-                +1: row[3],
-                +2: row[2],
+                -2: float(row[6]),
+                -1: float(row[5]),
+                 0: float(row[4]),
+                +1: float(row[3]),
+                +2: float(row[2]),
             }
     return trust
 

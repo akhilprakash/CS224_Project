@@ -159,7 +159,6 @@ class Network(object):
         political = []
         for user in self.users.values():
             political.append(user.getPoliticalness())
-        print political
         return political
 
     def initializeUsersAccordingToFriends(self):
