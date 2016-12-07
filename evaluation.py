@@ -122,11 +122,23 @@ class Statistics(Metric):
         # articleIDs = network.articles.keys()
         # userPOs = [network.getUser(userID).politicalness for userID in userIDs]
 
+        # Number of times each article was read by a user of each type (probably should sort articles based on average times read
+        # cl, l, n, c, cc dicts: {articleID: times read by users of this type}
+        cl = {articleID: 0 for articleID in articleIDs}
+        l = {articleID: 0 for articleID in articleIDs}
+        n = {articleID: 0 for articleID in articleIDs}
+        c = {articleID: 0 for articleID in articleIDs}
+        cc = {articleID: 0 for articleID in articleIDs} # -2
+
+        timesReadByType = {2: cl, 1: l, 0: n, -1: c, -2: cc}
+
         for userID in userIDs:
             numLiked[userID] = 0
+            userPO = network.getUser(userID).politicalness
             for article in network.articlesLikedByUser(userID):
                 numLiked[userID] += 1
                 timesLiked[article.articleId] += 1
+                timesReadByType[userPO][article.articleId] += 1
 
         print "userID: number of articles liked"
         print numLiked
@@ -136,16 +148,38 @@ class Statistics(Metric):
 
         print self.name
         plt.figure()
-        # numLiked_sorted = sorted(numLiked.items(), key=lambda x: x[1])
-        plt.plot(range(0, 34), sorted(numLiked.values()))
+        plt.plot(range(0, len(numLiked.keys())), sorted(numLiked.values()))
         plt.xlabel("Ordered Users")
         plt.ylabel("Number of Articles Liked")
-        plt.title("Number of Articles Liked By Each User")
-        # make this a mosaic plot later
+        plt.title("Number of Articles Liked By Each User \n " + str(experiment.parameters))
         plt.savefig(experiment.out_path(self.safe_name + " NumArticlesLiked" + ".png"))
         plt.close()
 
 
+        plt.figure()
+        plt.plot(range(0, len(timesLiked.keys())), sorted(timesLiked.values()))
+        plt.xlabel("Ordered Articles")
+        plt.ylabel("Number of Times Article Liked")
+        plt.title("Number of Users that Like Each Article \n " + str(experiment.parameters))
+        plt.savefig(experiment.out_path(self.safe_name + " TimesArticlesLiked" + ".png"))
+        plt.close()
+
+        # Number of times each article was read by a user of each type (probably should sort articles based on average times read
+        # cl, l, n, c, cc dicts: {articleID: times read by users of this type}
+        plt.figure()
+        plt.plot(cl.keys(), cl.values(), 'bx', l.keys(), l.values(), 'gx', n.keys(), n.values(), 'kx',
+                 c.keys(), c.values(), 'cx', cc.keys(), cc.values(), 'rx')
+        plt.legend(["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"])
+        plt.xlabel("Article")
+        plt.ylabel("Number of Times Article Liked")
+        plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters))
+        plt.savefig(experiment.out_path(self.safe_name + " NumTypesThatReadArticle" + ".png"))
+        plt.close()
+
+
+
+        # Number of times pair of users read same article
+        # Number of times user read an article from each source
 
 
 
