@@ -185,6 +185,7 @@ class GraphViz(Metric):
         util.writeCSV(out_path("statistics"), history)
 
 
+# No longer makes sense since articles don't have political leanings anymore.
 class ReadingDistribution(Metric):
     """
     Distribution of article political leaning given user political leaning.

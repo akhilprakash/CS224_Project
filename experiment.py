@@ -9,12 +9,14 @@ import numpy as np
 import evaluation
 import recommendation
 import util
-from articleGenerator import ArticleGenerator
 from network import Network
 from util import data_path, out_path, print_error, with_prob
+from article import Article
 
 
 class PLike(object):
+    UNIFORM_LIKE_PROB = 0.2
+
     TRUST = {}
     with open(data_path('percof-readers-trust.csv')) as f:
         reader = csv.reader(f, delimiter=",")
@@ -29,24 +31,25 @@ class PLike(object):
                 +2: row[2],
             }
 
-    UNIFORM_LIKE_PROB = 0.2
-
-    @staticmethod
-    def empirical(reader, article):
-        return PLike.TRUST[article.source][reader.politicalness]
-
     @staticmethod
     def uniform(reader, article):
         return PLike.UNIFORM_LIKE_PROB
 
+    @staticmethod
+    def empirical(reader, article):
+        # Like probability is equal to the trust percentage from the data.
+        # This doesn't always make sense though: very few people "trust"
+        # BuzzFeed, but a lot of people still like and share their listicles.
+        return PLike.TRUST[article.source][reader.politicalness]
+
 
 class Experiment(object):
 
-    SOURCES = ["New York Times", "Wall Street Journal", "Fox News"]
-    WEIGHTS_SOURCES = [1.0/3, 1.0/3, 1.0/3]
+    SOURCES = PLike.TRUST.keys()
+    WEIGHTS_SOURCES = [1.0 / len(SOURCES)] * len(SOURCES)  # uniform weights
 
     def __init__(self,
-                 num_iterations=500,
+                 num_iterations=100,
                  all_analyses=False,
                  recommender='Random',
                  networkInitType='1',
@@ -59,16 +62,12 @@ class Experiment(object):
         :param num_iterations: int number of iterations to run in this experiment.
         :param all_analyses: True to run all the analyses, False if not
         :param recommender: string name of the recommender class to use as defined in recommender.py
-        :param pLikeMethod: method name of the PLike version to use
+        :param pLikeMethod: method name of the PLike version to use: 'uniform'|'empirical'
         """
         self.start_time = datetime.datetime.now()
         self.num_iterations = num_iterations
         self.all_analyses = all_analyses
         self.numRecsPerIteration = numRecsPerIteration
-        self.articleGenerators = []
-        self.articleGenerators.append(ArticleGenerator(self.SOURCES[0], [.15, .35, 0, .35, .15]))
-        self.articleGenerators.append(ArticleGenerator(self.SOURCES[1], [0, .2, .5, .3, 0]))
-        self.articleGenerators.append(ArticleGenerator(self.SOURCES[2], [.7, .2, .1, 0, 0]))
         self.network = Network(networkInitType)
         self.pLike = getattr(PLike, pLikeMethod)
         self.recommender = getattr(recommendation, recommender)()
@@ -115,13 +114,12 @@ class Experiment(object):
                 evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
-            self.metrics = [evaluation.ReadingDistribution()]
-                            #evaluation.Statistics()]
+            self.metrics = []  # evaluation.Statistics()]
         self.histories = defaultdict(list)
 
     def introduceArticle(self, iterations):
-        articleGen = np.random.choice(self.articleGenerators, p=self.WEIGHTS_SOURCES)
-        article = articleGen.createArticle()
+        # Create an article from a random source
+        article = Article(np.random.choice(self.SOURCES, p=self.WEIGHTS_SOURCES))
         article.incrementTimeToLive(iterations)
         self.network.addArticle(article)
         return article
