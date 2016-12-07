@@ -88,8 +88,8 @@ class Statistics(Metric):
     """
 
     def measure(self, network, iterations):
-        print 'stats'
         pass
+
         '''
         userArticleGraph = network.userArticleGraph
         numUsersWithPoliticalness = collections.defaultdict(int)
@@ -113,7 +113,39 @@ class Statistics(Metric):
 
 
     def plot(self, network, history):
-        pass
+        # Number of articles read by each user
+
+        userIDs = network.users.keys()
+        articleIDs = network.articles.keys()
+        numLiked = {userID: 0 for userID in userIDs} # Number of articles each user liked
+        timesLiked = {articleID: 0 for articleID in articleIDs} # Number of times each article was liked
+        # articleIDs = network.articles.keys()
+        # userPOs = [network.getUser(userID).politicalness for userID in userIDs]
+
+        for userID in userIDs:
+            numLiked[userID] = 0
+            for article in network.articlesLikedByUser(userID):
+                numLiked[userID] += 1
+                timesLiked[article.articleId] += 1
+                
+        print "userID: number of articles liked"
+        print numLiked
+
+        print "articleID: number of users liked"
+        print timesLiked
+
+
+
+
+        # Number of users that read each article
+        # Types of users that read each article (skewedness in distribution in types of user that read each article?)
+        # Looking at the top two articles, orientations of users that read those two articles
+        # Variance in the readership; how much does distribution of pol.orient of users vary across each article
+        # Variance in who read each article
+
+
+
+
         '''
         last = history[-1][0]
         for key, value in last.items():
