@@ -165,7 +165,14 @@ class GraphViz(Metric):
     """
 
     def measure(self, network, iterations):
-        print 'stats'
+        print self.name
+        plt.figure()
+        # plt.bar(keys, vals, color="blue")
+        # plt.xlabel("Article Politicalness")
+        # plt.ylabel("Frequency Normalized bby number of users")
+        plt.title("Graph at Iteration " + str(iterations))
+        plt.savefig(out_path(self.safe_name + "Iter" + str(iterations) + ".png"))
+        plt.close()
         pass
 
 
