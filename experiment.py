@@ -135,7 +135,7 @@ class Experiment(object):
                 evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
-            self.metrics = [evaluation.ReadingDistribution()]
+            self.metrics = [evaluation.ReadingDistribution(), evaluation.GraphViz()]
                             #evaluation.Statistics()]
         self.histories = defaultdict(list)
 

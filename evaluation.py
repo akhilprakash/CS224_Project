@@ -169,15 +169,72 @@ class GraphViz(Metric):
 
         plt.figure()
         G = nx.Graph()  # Create a graph
-        users = network.users.keys
+        userIDs = network.users.keys()
+        articleIDs = network.articles.keys()
+        userPOs = [network.getUser(userID).politicalness for userID in userIDs]
 
-        for user in users():
-            articlesRead = 
-            G.add_edge(user, dictionary[target])  # Add an edge for each dictionary entry
+
+        for userID in userIDs:
+            G.add_node(userID) #network.getUser(userID).politicalness)
+            #G.node[userID]['color'] = 'blue'
+
+
+        for articleID in articleIDs:
+            G.add_node(articleID)
+
+        # print userIDs
+        # print userPOs
+
+        '''
+        # nodes
+nx.draw_networkx_nodes(G,pos,
+                       nodelist=[0,1,2,3],
+                       node_color='r',
+                       node_size=500,
+                   alpha=0.8)
+nx.draw_networkx_nodes(G,pos,
+                       nodelist=[4,5,6,7],
+                       node_color='b',
+                       node_size=500,
+                   alpha=0.8)
+
+        # Draw user nodes and color on polit.orient.
+
+        nx.draw_networkx_nodes(G,pos,
+                       nodelist=[0,1,2,3],
+                       node_color='r',
+                       node_size=500,
+                   alpha=0.8)
+
+# edges
+nx.draw_networkx_edges(G,pos,width=1.0,alpha=0.5)
+nx.draw_networkx_edges(G,pos,
+                       edgelist=[(0,1),(1,2),(2,3),(3,0)],
+                       width=8,alpha=0.5,edge_color='r')
+nx.draw_networkx_edges(G,pos,
+                       edgelist=[(4,5),(5,6),(6,7),(7,4)],
+                       width=8,alpha=0.5,edge_color='b')
+        '''
+
+
+        pos = nx.spring_layout(G)
+        nx.draw_networkx_nodes(G, pos, nodelist= userIDs, node_color= userPOs) # pos,
+                               # nodelist= userIDs, #[0, 1, 2, 3],
+                               # node_color= userPOs) # 'r',
+                               # node_size=500,
+                               # alpha=0.8)
+        nx.draw_networkx_nodes(G, pos, nodelist=articleIDs, node_color='red')
+
+        for userID in userIDs:
+            for article in network.articlesLikedByUser(userID):
+                G.add_edge(userID, article.articleId)  # Add an edge for each dictionary entry
             # Nodes are automatically created
 
-        pos = nx.spring_layout(G)  # Layout algorithm
-        nx.draw(G, with_labels=True)  # Draw the graph
+        nx.draw_networkx_edges(G, pos, width=1.0, alpha=0.5)
+
+
+        # pos = nx.shell_layout(G)  # Layout algorithm
+        # nx.draw_circular(G, with_labels=True)  # Draw the graph
 
         plt.title("Graph at Iteration " + str(iterations))
         plt.savefig(out_path(self.safe_name + "Iter" + str(iterations) + ".png"))
