@@ -127,12 +127,24 @@ class Statistics(Metric):
             for article in network.articlesLikedByUser(userID):
                 numLiked[userID] += 1
                 timesLiked[article.articleId] += 1
-                
+
         print "userID: number of articles liked"
         print numLiked
 
         print "articleID: number of users liked"
         print timesLiked
+
+        print self.name
+        plt.figure()
+        # numLiked_sorted = sorted(numLiked.items(), key=lambda x: x[1])
+        plt.plot(range(0, 34), sorted(numLiked.values()))
+        plt.xlabel("Ordered Users")
+        plt.ylabel("Number of Articles Liked")
+        plt.title("Number of Articles Liked By Each User")
+        # make this a mosaic plot later
+        plt.savefig(out_path(self.safe_name + " NumArticlesLiked" + ".png"))
+        plt.close()
+
 
 
 
