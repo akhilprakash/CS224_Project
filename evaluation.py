@@ -70,8 +70,89 @@ class Metric(object):
     def __repr__(self):
         return self.__str__()
 
-# class Statistics(Metric):
-#    def measure(self, network, iterations):
+
+class Statistics(Metric):
+    """
+    Statistics on graph/articles read:
+    Number of articles read by each user
+    Number of articles of each type read
+    Number of times each article was read (across article types)
+    Articles produced by each source
+    For each article of the same type, the variety (or nonvariety) of users that read it
+    For each specific article, the types of users that read it
+    """
+
+    def measure(self, network, iterations):
+        print 'stats'
+        pass
+        '''
+        userArticleGraph = network.userArticleGraph
+        numUsersWithPolticalness = collections.defaultdict(int)
+        distribution = {}
+        for user in network.users.itervalues():
+            nodeUserId = user.getUserId()
+            userPolticalness = user.getPoliticalness()
+            for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
+                articlePoliticalness = network.getArticle(article).getPoliticalness()
+                numUsersWithPolticalness[userPolticalness] = numUsersWithPolticalness[userPolticalness] + 1
+                if userPolticalness in distribution:
+                    innerDict = distribution[userPolticalness]
+                    if articlePoliticalness in innerDict:
+                        innerDict[articlePoliticalness] = innerDict[articlePoliticalness] + 1
+                    else:
+                        innerDict[articlePoliticalness] = 1
+                else:
+                    distribution[userPolticalness] = {articlePoliticalness: 1}
+        return [distribution, numUsersWithPolticalness]
+        '''
+
+
+    def plot(self, history):
+        pass
+        '''
+        last = history[-1][0]
+        for key, value in last.items():
+            # value is a dictionary
+            keys = []
+            vals = []
+            for k1, v1 in value.items():
+                keys.append(k1)
+                vals.append(v1)
+            print self.name
+            plt.figure()
+            plt.bar(keys, vals, color="blue")
+            plt.xlabel("Article Politicalness")
+            plt.ylabel("Frequency")
+            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            # make this a mosaic plot later
+            plt.savefig(out_path(self.safe_name + "key=" + str(key) + ".png"))
+            plt.close()
+        numUsersWithPolticalness = history[-1][1]
+        for key, value in last.items():
+            # value is a dictionary
+            keys = []
+            vals = []
+            for k1, v1 in value.items():
+                keys.append(k1)
+                if numUsersWithPolticalness[k1] != 0:
+                    vals.append(v1 / (1.0 * numUsersWithPolticalness[k1]))
+                else:
+                    vals.append(0)
+            print self.name
+            plt.figure()
+            plt.bar(keys, vals, color="blue")
+            plt.xlabel("Article Politicalness")
+            plt.ylabel("Frequency Normalized bby number of users")
+            plt.title("Which Articles do Users with polticalness " + str(key) + " Read")
+            # make this a mosaic plot later
+            plt.savefig(out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
+            plt.close()
+        '''
+
+    def save(self, history):
+        pass
+        util.writeCSV(out_path("statistics"), history)
+
 
 
 class ReadingDistribution(Metric):

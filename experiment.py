@@ -79,7 +79,7 @@ class Experiment(object):
                 #evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
-            self.metrics = [evaluation.ReadingDistribution()]
+            self.metrics = [evaluation.ReadingDistribution(), evaluation.Statistics()]
         self.histories = defaultdict(list)
 
     def createArticle(self):
