@@ -250,7 +250,7 @@ class Experiment(object):
         '''
 
         # Compute recommendations and "show" them to users
-        runRecommendation(readers, plike)
+        self.runRecommendation(readers, plike)
         '''
         # On every third iteration, "show" the readers the top 5 most popular articles
         if iterations % 3 == 0:
