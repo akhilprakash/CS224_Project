@@ -130,7 +130,7 @@ class Statistics(Metric):
         c = {articleID: 0 for articleID in articleIDs}
         cc = {articleID: 0 for articleID in articleIDs} # -2
 
-        timesReadByType = dict{2: cl, 1: l, 0: n, -1: c, -2: cc}
+        timesReadByType = {2: cl, 1: l, 0: n, -1: c, -2: cc}
 
         for userID in userIDs:
             numLiked[userID] = 0
@@ -168,7 +168,7 @@ class Statistics(Metric):
         # cl, l, n, c, cc dicts: {articleID: times read by users of this type}
         plt.figure()
         plt.plot(cl.keys(), cl.values(), 'rx')
-        plt.xlabel("Ordered Articles")
+        plt.xlabel("Article")
         plt.ylabel("Number of Times Article Liked")
         plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters))
         plt.savefig(experiment.out_path(self.safe_name + " NumTypesThatReadArticle" + ".png"))
