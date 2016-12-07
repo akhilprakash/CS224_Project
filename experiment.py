@@ -145,7 +145,8 @@ class Experiment(object):
                 #evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
-            self.metrics = [evaluation.ReadingDistribution(), evaluation.Statistics()]
+            self.metrics = [evaluation.ReadingDistribution(self.network.userArticleGraph, "userArticleGraph")]
+                            #evaluation.Statistics()]
         self.histories = defaultdict(list)
 
     def createArticle(self):
@@ -189,7 +190,7 @@ class Experiment(object):
                     if plike(self.network.getUser(randNeighbor[0]), article) < random.random():
                         self.network.addEdge(self.network.getUser(randNeighbor[0]), article)
         readers = self.network.users.values()
-        runRecommendation(readers, plike)
+        self.runRecommendation(readers, plike)
         if self.shouldHelp0DegreeUsers:
             self.help0DegreeUsers(iterations, article)
         if self.shouldHelp0DegreeArticles:
@@ -334,7 +335,7 @@ class Experiment(object):
             elif self.simulation == "recc":
                 self.recc_system_simulate(i, plike = self.plike)
             elif self.simulation == "random":
-                selfrandomRandomCompleteTriangles(i, plike = self.plike)
+                self.randomRandomCompleteTriangles(i, plike = self.plike)
             self.killArticles(i)
 
     def saveResults(self):
