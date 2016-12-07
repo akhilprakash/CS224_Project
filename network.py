@@ -109,7 +109,6 @@ class Network(object):
             depth = depth + 1
         self.getPoliticalAllUsers()
 
-
     def calcAdjacencyMatrix(self, graph):
         counter = 0
         uIdOrAIdToMatrix = {}
@@ -186,8 +185,6 @@ class Network(object):
                 user.setPoliticalness(idx -2)
         self.getPoliticalAllUsers()
 
-
-
     def getBeta(self, userNodeId, slope=.5):
         return self.userArticleGraph.GetNI(userNodeId).GetOutDeg() * slope
 
@@ -209,7 +206,6 @@ class Network(object):
             u = random.random()
             if u <= r:
                 return x
-
 
     def getNextReaders(self):
         result = []
@@ -246,9 +242,10 @@ class Network(object):
                 articles.append(article)
         return articles
 
-    def articlesReadByUser(self, userId):
-        articlesId = []
-        for edge in self.userArticleGraph.GetNI(userId).GetOutEdges():
-            if edge in self.articles:
-                articlesId.append(edge)
-        return articlesId
+    def articlesLikedByUser(self, userId):
+        """Iterator over the articles liked by the given user."""
+        return (
+            self.articles[articleId]
+            for articleId in self.userArticleGraph.GetNI(userId).GetOutEdges()
+            if not self.articles[articleId].isDead
+        )

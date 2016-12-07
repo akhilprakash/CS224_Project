@@ -4,6 +4,7 @@ from __future__ import division
 import heapq
 import collections
 import itertools
+import random
 
 from util import PairsDict
 
@@ -51,7 +52,7 @@ class RecommendBasedOnFriends(Recommender):
             friendsOfR = network.friendGraph.GetNI(r.getUserId()).GetOutEdges()
             articles = collections.defaultdict(int)
             for friend in friendsOfR:
-                articleIds = network.articlesReadByUser(friend)
+                articleIds = network.articlesLikedByUser(friend)
                 for aId in articleIds:
                     if not network.articles[aId].getIsDead():
                         articles[aId] = articles[aId] + 1
@@ -64,6 +65,24 @@ class RecommendBasedOnFriends(Recommender):
         return recommendation
 
 
+class Instagram(Recommender):
+    """Uniformly shows reader all the articles that their friends liked."""
+    # Potential problems:
+    # shows all articles liked by friends regardless of how long ago that was.
+
+    def makeRecommendations(self, network, readers, N=1):
+        recs = {}
+        for reader in readers:
+            candidates = [
+                article
+                for friend in network.friendGraph.GetNI(reader.userId).GetOutEdges()
+                for article in network.articlesLikedByUser(friend)
+            ]
+            recs[reader] = random.sample(candidates, N)
+        return recs
+
+
+# FIXME: dont' recommend dead articles
 class CollaborativeFiltering(Recommender):
     """
     Item-item collaborative filtering.
