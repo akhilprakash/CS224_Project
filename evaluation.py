@@ -119,6 +119,7 @@ class Statistics(Metric):
         articleIDs = network.articles.keys()
         numLiked = {userID: 0 for userID in userIDs} # Number of articles each user liked
         timesLiked = {articleID: 0 for articleID in articleIDs} # Number of times each article was liked
+        numUserTypes = {2: 0, 1: 0, 0: 0, -1: 0, -2: 0}
         # articleIDs = network.articles.keys()
         # userPOs = [network.getUser(userID).politicalness for userID in userIDs]
 
@@ -135,6 +136,7 @@ class Statistics(Metric):
         for userID in userIDs:
             numLiked[userID] = 0
             userPO = network.getUser(userID).politicalness
+            numUserTypes[userPO] += 1
             for article in network.articlesLikedByUser(userID):
                 numLiked[userID] += 1
                 timesLiked[article.articleId] += 1
@@ -175,6 +177,20 @@ class Statistics(Metric):
         plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters))
         plt.savefig(experiment.out_path(self.safe_name + " NumTypesThatReadArticle" + ".png"))
         plt.close()
+
+        # ["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"]
+        # Number of users of each type
+        plt.figure()
+        plt.plot(numUserTypes.keys(), numUserTypes.values(), 'kx')
+        # plt.legend(
+        #    ["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"])
+        plt.xlabel("Type")
+        plt.ylabel("Number of Users of Type")
+        plt.title("Number of Users of Each Type \n " + str(experiment.parameters))
+        plt.savefig(experiment.out_path(self.safe_name + " NumTypes" + ".png"))
+        plt.close()
+
+
 
 
 
