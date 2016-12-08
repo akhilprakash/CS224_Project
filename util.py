@@ -150,6 +150,7 @@ class PairsDict(dict):
         d[a, b] = "hello"
         assert d[a, b] == d[b, a]
     """
+
     def __setitem__(self, key, value):
         u, v = key
         if u < v:
