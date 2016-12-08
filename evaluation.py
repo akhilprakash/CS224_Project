@@ -12,6 +12,7 @@ from scipy.sparse.csgraph import laplacian
 
 import util
 from util import print_error
+from collections import defaultdict
 
 try:
     import networkx as nx
@@ -121,6 +122,7 @@ class Statistics(Metric):
         numLiked = {userID: 0 for userID in userIDs} # Number of articles each user liked
         timesLiked = {articleID: 0 for articleID in articleIDs} # Number of times each article was liked
         numUserTypes = {2: 0, 1: 0, 0: 0, -1: 0, -2: 0}
+        likedFromSource = defaultdict(int)
         # articleIDs = network.articles.keys()
         # userPOs = [network.getUser(userID).politicalness for userID in userIDs]
 
@@ -142,12 +144,16 @@ class Statistics(Metric):
                 numLiked[userID] += 1
                 timesLiked[article.articleId] += 1
                 timesReadByType[userPO][article.articleId] += 1
+                likedFromSource[article.getSource()] += 1
 
         print "userID: number of articles liked"
         print numLiked
 
         print "articleID: number of users liked"
         print timesLiked
+
+        print "source: number of times an article was liked from this source"
+        print likedFromSource
 
         print self.name
         plt.figure()
@@ -158,6 +164,18 @@ class Statistics(Metric):
         plt.savefig(experiment.out_path(self.safe_name + " NumArticlesLiked" + ".png"))
         plt.close()
 
+        '''
+        print self.name
+        plt.figure()
+        plt.plot(range(0, len(likedFromSource.keys())), likedFromSource.keys())
+        plt.xticks(range(0, len(likedFromSource.keys())), likedFromSource.keys())
+        plt.xticks(range(0, len(likedFromSource.keys())), likedFromSource.keys(), rotation=45)  # writes strings with 45 degree angle
+        plt.xlabel("Source")
+        plt.ylabel("Number of Articles Liked from Source")
+        plt.title("Number of Articles Liked from Each Source \n " + str(experiment.parameters))
+        plt.savefig(experiment.out_path(self.safe_name + " LikedFromSource" + ".png"))
+        plt.close()
+        '''
 
         plt.figure()
         plt.plot(range(0, len(timesLiked.keys())), sorted(timesLiked.values()))
@@ -252,6 +270,69 @@ class Statistics(Metric):
     def save(self, experiment, history):
         pass
         util.writeCSV(experiment.out_path("statistics"), history)
+
+class WeightedGirvanNewman(Metric):
+
+    def measure(self, experiment, network, iterations):
+        #https://networkx.github.io/documentation/development/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
+        G, _ , _ = network.createUserUserGraph()
+        betweenessCentr = nx.edge_betweenness_centrality(G, normalized=True, weight="weight")
+        numEdgesRemoved = 0
+        betweeness = []
+        for key, value in betweenessCentr.items():
+            betweeness.append((key, value))
+        sorted(betweeness, key = lambda x: x[1], reverse = True)
+
+        while nx.number_connected_components(G) != 5 and numEdgesRemoved < min(30, len(betweeness)):
+            G.remove_edge(betweeness[numEdgesRemoved][0][0], betweeness[numEdgesRemoved][0][1])
+            numEdgesRemoved = numEdgesRemoved + 1
+        components = nx.connected_component_subgraphs(G)
+        values = []
+        for CnCom in components:
+            dictionary = collections.defaultdict(int)
+            for NI in CnCom:
+                politicalness = 0
+                if NI in network.users:
+                    politicalness = network.users[NI].getPoliticalness()
+                elif NI in network.articles:
+                    politicalness = network.articles[NI].getPoliticalness()
+                else:
+                    raise Exception("Should not reach here")
+                dictionary[politicalness] = dictionary[politicalness] + 1
+            values.append(dictionary)
+        return [betweenessCentr, values]
+
+    def plot(self, experiment, history):
+        last = history[-1][0]
+        plt.figure()
+        plt.plot(sorted(last.values()))
+        plt.xlabel("Edge Ordering")
+        plt.ylabel("Weighted Edge Betweeness")
+        plt.title("Weighted Edge Betweeness")
+        plt.savefig(out_path(self.name + ".png"))
+        plt.close()
+        politicalnessByCommunityHistory = map(lambda x: x[1], history)
+        politicalnessByCommunityHistory = politicalnessByCommunityHistory[(len(politicalnessByCommunityHistory)-5):len(politicalnessByCommunityHistory)]
+        for i, h in enumerate(politicalnessByCommunityHistory):
+            for cmty, innerDict in h.items():
+                values = []
+                for pol in range(-2, 3):
+                    values.append(innerDict[pol])
+                try:
+                    print self.name
+                    plt.figure()
+                    plt.bar(range(-2, 3), values)
+                    plt.xlabel("Politicalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Politicalness Community = " + str(cmty))
+                    plt.savefig(experiment.out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i+len(modularity) -5) + '.png', "Modularity2"))
+                    plt.close()
+                except IOError:
+                    print_error("Error making plot")
+
+    def save(self, experiment, history):
+        util.writeCSV(out_path(self.safe_name), history)
+
 
 
 class GraphViz(Metric):
@@ -440,7 +521,7 @@ class PathsBetweenPoliticalnesses(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Average Distance Between Politicalness")
         plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
-        plt.savefig(experiment.out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
+        plt.savefig(util.out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("pathsbetweenpoliticalness" + str(self.politicalness1) + str(self.politicalness2)), history)
@@ -505,52 +586,61 @@ class Modularity2(Metric):
 
 class Modularity(Metric):
     def measure(self, experiment, network, iterations):
-        result = []
-        for idx, i in enumerate(range(-2, 3)):
-            ids = network.getUserIdsWithSpecificPoliticalness(i)
-            Nodes = snap.TIntV()
-            for ni in ids:
-                Nodes.Add(ni)
-            result.append(snap.GetModularity(network.userArticleGraph, Nodes))
+        
+        def modularity(graph):
+            result = []
+            for idx, i in enumerate(range(-2, 3)):
+                ids = network.getUserIdsWithSpecificPoliticalness(i)
+                Nodes = snap.TIntV()
+                for ni in ids:
+                    Nodes.Add(ni)
+                result.append(snap.GetModularity(graph, Nodes))
 
-        return result
+            return result
+        return [modularity(network.userArticleGraph), modularity(network.userArticleFriendGraph), modularity(network.createUserUserGraph()[1])]
 
     def plot(self, experiment, network, history):
-        for idx, i in enumerate(range(-2, 3)):
-            print self.name
-            plt.figure()
-            oneCluster = map(lambda x:x[idx], history)
-            plt.plot(oneCluster)
-            plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
-            plt.close()
+        
+        def plotHelper(history, id):
+            for idx, i in enumerate(range(-2, 3)):
+                print self.name
+                plt.figure()
+                oneCluster = map(lambda x:x[idx], history)
+                plt.plot(oneCluster)
+                plt.savefig(util.out_path(self.safe_name + 'politicalness' + str(i) + id + '.png', "Modularity"))
+                plt.close()
+
+        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+        for i, id in enumerate(ids):
+            plotHelper(map(lambda x: x[i], history), id)
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("modularity"), history)
 
 
-class ModularityWRTFriends(Metric):
-    def measure(self, experiment, network, iterations):
-        result = []
-        for idx, i in enumerate(range(-2, 3)):
-            ids = network.getUserIdsWithSpecificPoliticalness(i)
-            Nodes = snap.TIntV()
-            for ni in ids:
-                Nodes.Add(ni)
-            result.append(snap.GetModularity(network.userArticleFriendGraph, Nodes))
+# class ModularityWRTFriends(Metric):
+#     def measure(self, experiment, network, iterations):
+#         result = []
+#         for idx, i in enumerate(range(-2, 3)):
+#             ids = network.getUserIdsWithSpecificPoliticalness(i)
+#             Nodes = snap.TIntV()
+#             for ni in ids:
+#                 Nodes.Add(ni)
+#             result.append(snap.GetModularity(network.userArticleFriendGraph, Nodes))
 
-        return result
+#         return result
 
-    def plot(self, experiment, network, history):
-        for idx, i in enumerate(range(-2, 3)):
-            print self.name
-            plt.figure()
-            oneCluster = map(lambda x:x[idx], history)
-            plt.plot(oneCluster)
-            plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
-            plt.close()
+#     def plot(self, experiment, network, history):
+#         for idx, i in enumerate(range(-2, 3)):
+#             print self.name
+#             plt.figure()
+#             oneCluster = map(lambda x:x[idx], history)
+#             plt.plot(oneCluster)
+#             plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
+#             plt.close()
 
-    def save(self, experiment, history):
-        util.writeCSV(experiment.out_path("modularity"), history)
+#     def save(self, experiment, history):
+#         util.writeCSV(experiment.out_path("modularity"), history)
 
 
 def copyGraph(graph):
@@ -564,110 +654,121 @@ def copyGraph(graph):
 
 class Betweenness(Metric):
     def measure(self, experiment, network, iterations):
-        Nodes = snap.TIntFltH()
-        Edges = snap.TIntPrFltH()
-        snap.GetBetweennessCentr(network.userArticleGraph, Nodes, Edges, 1.0)
-        # for edge in Edges:
-        #   		print "edge: (%d, %d) centrality: %f" % (edge.GetVal1(), edge.GetVal2(), Edges[edge])
+        
+        def betweeeness(graph):
+            Nodes = snap.TIntFltH()
+            Edges = snap.TIntPrFltH()
+            snap.GetBetweennessCentr(graph, Nodes, Edges, 1.0)
+            # for edge in Edges:
+            #   		print "edge: (%d, %d) centrality: %f" % (edge.GetVal1(), edge.GetVal2(), Edges[edge])
 
-        betweenessCentr = []
-        for edge in Edges:
-            betweenessCentr.append((edge, Edges[edge]))
-        betweenessCentr.sort(key = lambda x: x[1], reverse = True)
-        copyOfGraph = copyGraph(network.userArticleGraph)
-        components = snap.TCnComV()
-        snap.GetWccs(copyOfGraph, components)
-        numEdgesRemoved = 0
-
-        while len(components) != 5 and numEdgesRemoved < min(30, len(betweenessCentr)):
-            copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
+            betweenessCentr = []
+            for edge in Edges:
+                betweenessCentr.append((edge, Edges[edge]))
+            betweenessCentr.sort(key = lambda x: x[1], reverse = True)
+            copyOfGraph = copyGraph(graph)
             components = snap.TCnComV()
             snap.GetWccs(copyOfGraph, components)
-            numEdgesRemoved = numEdgesRemoved + 1
-        components = snap.TCnComV()
-        snap.GetWccs(copyOfGraph, components)
-        values = []
-        for CnCom in components:
-            dictionary = collections.defaultdict(int)
-            for NI in CnCom:
-                politicalness = 0
-                if NI in network.users:
-                    politicalness = network.users[NI].getPoliticalness()
-                elif NI in network.articles:
-                    politicalness = network.articles[NI].getPoliticalness()
-                else:
-                    raise Exception("Should not reach here")
-                dictionary[politicalness] = dictionary[politicalness] + 1
-            values.append(dictionary)
-        return [betweenessCentr, values]
+            numEdgesRemoved = 0
+
+            while len(components) != 5 and numEdgesRemoved < min(30, len(betweenessCentr)):
+                copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
+                components = snap.TCnComV()
+                snap.GetWccs(copyOfGraph, components)
+                numEdgesRemoved = numEdgesRemoved + 1
+            components = snap.TCnComV()
+            snap.GetWccs(copyOfGraph, components)
+            values = []
+            for CnCom in components:
+                dictionary = collections.defaultdict(int)
+                for NI in CnCom:
+                    politicalness = 0
+                    if NI in network.users:
+                        politicalness = network.users[NI].getPoliticalness()
+                    elif NI in network.articles:
+                        #politicalness = network.articles[NI].getPoliticalness()
+                        print ""
+                    else:
+                        raise Exception("Should not reach here")
+                    dictionary[politicalness] = dictionary[politicalness] + 1
+                values.append(dictionary)
+            return [betweenessCentr, values]
+
+        return [betweeeness(network.userArticleGraph), betweeeness(network.userArticleFriendGraph), betweeeness(network.createUserUserGraph()[1])]
 
     def plot(self, experiment, network, history):
-        betweeness = map(lambda x: x[0], history)
-        betweeness = betweeness[(len(betweeness)-10):len(betweeness)]
-        for i,b in enumerate(betweeness):
-            plt.figure()
-            print self.name
-            plt.plot(sorted(map(lambda x: x[1], b)))
-            plt.xlabel("Edge Ordering")
-            plt.ylabel("Edge Betweenness")
-            plt.title("Edge Betweeness")
-            plt.savefig(experiment.out_path(self.safe_name + "iteartions=" + str(i) + '.png'))
-            plt.close()
-        values = map(lambda x: x[1], history)
-        values = values[(len(values)-5):len(values)]
-        for i, innerDict in enumerate(values):
-            for j,v in enumerate(innerDict):
-                if j < 15:
-                    val = []
-                    for pol in range(-2, 3):
-                        val.append(v[pol])
-                    plt.figure()
-                    plt.bar(range(-2, 3), val)
-                    plt.xlabel("Politicalness")
-                    plt.ylabel("Count")
-                    plt.title("Count vs. Politicalness Community = "+ str(i))
-                    plt.savefig(experiment.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + '.png', "Betweenness_Community"))
-                    plt.close()
+
+        def plotHelper(history, id):
+            betweeness = map(lambda x: x[0], history)
+            betweeness = betweeness[(len(betweeness)-10):len(betweeness)]
+            for i,b in enumerate(betweeness):
+                plt.figure()
+                print self.name
+                plt.plot(sorted(map(lambda x: x[1], b)))
+                plt.xlabel("Edge Ordering")
+                plt.ylabel("Edge Betweenness")
+                plt.title("Edge Betweeness")
+                plt.savefig(experiment.out_path(self.safe_name + "iteartions=" + str(i) + '.png'))
+                plt.close()
+            values = map(lambda x: x[1], history)
+            values = values[(len(values)-5):len(values)]
+            for i, innerDict in enumerate(values):
+                for j,v in enumerate(innerDict):
+                    if j < 15:
+                        val = []
+                        for pol in range(-2, 3):
+                            val.append(v[pol])
+                        plt.figure()
+                        plt.bar(range(-2, 3), val)
+                        plt.xlabel("Politicalness")
+                        plt.ylabel("Count")
+                        plt.title("Count vs. Politicalness Community = "+ str(i))
+                        plt.savefig(util.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + id + '.png', "Betweenness_Community"))
+                        plt.close()
+
+        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+        for i, id in enumerate(ids):
+            plotHelper(map(lambda x: x[i], history), id)
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("modularity2"), history)
 
-class BetweennessWRTFriends(Betweenness):
-    def measure(self, experiment, network, iterations):
-        Nodes = snap.TIntFltH()
-        Edges = snap.TIntPrFltH()
-        snap.GetBetweennessCentr(network.userArticleFriendGraph, Nodes, Edges, 1.0)
+# class BetweennessWRTFriends(Betweenness):
+#     def measure(self, experiment, network, iterations):
+#         Nodes = snap.TIntFltH()
+#         Edges = snap.TIntPrFltH()
+#         snap.GetBetweennessCentr(network.userArticleFriendGraph, Nodes, Edges, 1.0)
 
-        betweenessCentr = []
-        for edge in Edges:
-            betweenessCentr.append((edge, Edges[edge]))
-        betweenessCentr.sort(key = lambda x: x[1], reverse = True)
-        copyOfGraph = copyGraph(network.userArticleGraph)
-        components = snap.TCnComV()
-        snap.GetWccs(copyOfGraph, components)
-        numEdgesRemoved = 0
+#         betweenessCentr = []
+#         for edge in Edges:
+#             betweenessCentr.append((edge, Edges[edge]))
+#         betweenessCentr.sort(key = lambda x: x[1], reverse = True)
+#         copyOfGraph = copyGraph(network.userArticleGraph)
+#         components = snap.TCnComV()
+#         snap.GetWccs(copyOfGraph, components)
+#         numEdgesRemoved = 0
 
-        while len(components) != 5 and numEdgesRemoved < min(30, len(betweenessCentr)):
-            copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
-            components = snap.TCnComV()
-            snap.GetWccs(copyOfGraph, components)
-            numEdgesRemoved = numEdgesRemoved + 1
-        components = snap.TCnComV()
-        snap.GetWccs(copyOfGraph, components)
-        values = []
-        for CnCom in components:
-            dictionary = collections.defaultdict(int)
-            for NI in CnCom:
-                politicalness = 0
-                if NI in network.users:
-                    politicalness = network.users[NI].getPoliticalness()
-                elif NI in network.articles:
-                    politicalness = network.articles[NI].getPoliticalness()
-                else:
-                    raise Exception("Should not reach here")
-                dictionary[politicalness] = dictionary[politicalness] + 1
-            values.append(dictionary)
-        return [betweenessCentr, values]
+#         while len(components) != 5 and numEdgesRemoved < min(30, len(betweenessCentr)):
+#             copyOfGraph.DelEdge(betweenessCentr[numEdgesRemoved][0].GetVal1(), betweenessCentr[numEdgesRemoved][0].GetVal2())
+#             components = snap.TCnComV()
+#             snap.GetWccs(copyOfGraph, components)
+#             numEdgesRemoved = numEdgesRemoved + 1
+#         components = snap.TCnComV()
+#         snap.GetWccs(copyOfGraph, components)
+#         values = []
+#         for CnCom in components:
+#             dictionary = collections.defaultdict(int)
+#             for NI in CnCom:
+#                 politicalness = 0
+#                 if NI in network.users:
+#                     politicalness = network.users[NI].getPoliticalness()
+#                 elif NI in network.articles:
+#                     politicalness = network.articles[NI].getPoliticalness()
+#                 else:
+#                     raise Exception("Should not reach here")
+#                 dictionary[politicalness] = dictionary[politicalness] + 1
+#             values.append(dictionary)
+#         return [betweenessCentr, values]
 
 
 class UserDegreeDistribution(Metric):
@@ -725,7 +826,7 @@ class ArticleDegreeDistribution(Metric):
             plt.xlabel("Aricle Degree")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Degree")
-            plt.savefig(experiment.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "AritcleDegree"))
+            plt.savefig(util.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "AritcleDegree"))
             plt.close()
 
     def save(self, experiment, history):
@@ -760,7 +861,7 @@ class DistributionOfLifeTime(Metric):
             plt.xlabel("Aricle Lifetime")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Lifetime")
-            plt.savefig(experiment.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "LifetimeDistribution"))
+            plt.savefig(util.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "LifetimeDistribution"))
             plt.close()
 
     def save(self, experiment, history):
@@ -803,7 +904,7 @@ class AliveArticles(Metric):
 class OverallClustering(Metric):
     def measure(self, experiment, network, iterations):
         #printGraph(network.userArticleGraph)
-        return snap.GetClustCf(network.userArticleGraph, -1)
+        return [snap.GetClustCf(network.userArticleGraph, -1), snap.GetClustCf(network.userArticleFriendGraph, -1), snap.GetClustCf(network.createUserUserGraph()[1], -1)]
 
     def plot(self, experiment, network, history):
         """
@@ -811,13 +912,19 @@ class OverallClustering(Metric):
         appropriate plot of this metric over time.
         """
         print self.name
-        plt.figure()
-        plt.plot(history)
-        plt.xlabel("Number of Iterations")
-        plt.ylabel("Clustering Coefficient")
-        plt.title("Clustering Coefficient vs. Number of Iterations")
-        plt.savefig(experiment.out_path(self.safe_name + '.png'))
-        plt.close()
+        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+
+        def plotHelper(history, id):
+            plt.figure()
+            plt.plot(history)
+            plt.xlabel("Number of Iterations")
+            plt.ylabel("Clustering Coefficient")
+            plt.title("Clustering Coefficient vs. Number of Iterations")
+            plt.savefig(experiment.out_path(self.safe_name + id + '.png'))
+            plt.close()
+
+        for i, id in enumerate(ids):
+            plotHelper(map(lambda x: x[i], history), id)
 
     def save(self, experiment, history):
         """
@@ -825,10 +932,10 @@ class OverallClustering(Metric):
         """
         util.writeCSV(experiment.out_path("OverallClustering" + self.name), history)
 
-class OverallClusteringWRTFriends(OverallClustering):
-    def measure(self, experiment, network, iterations):
-        #printGraph(network.userArticleGraph)
-        return snap.GetClustCf(network.userArticleFriendGraph, -1)    
+# class OverallClusteringWRTFriends(OverallClustering):
+#     def measure(self, experiment, network, iterations):
+#         #printGraph(network.userArticleGraph)
+#         return snap.GetClustCf(network.userArticleFriendGraph, -1)    
 
 
 class DeadArticles(Metric):
@@ -885,32 +992,39 @@ class ClusterPoliticalness(Metric):
         return (2.0 * counter) / (degree * (degree - 1))        
 
     def measure(self, experiment, network, iterations):
-        userArticleGraph = network.userArticleGraph
-        cluster = []
-        for user in network.users.itervalues():
-            #if iterations > 35 and self.politicalness == "all":
-                #pdb.set_trace()
-            if self.politicalness == "all" or str(
-                    user.getPoliticalness()) == self.politicalness:
-                result = self.clusterOneNode(
-                    userArticleGraph.GetNI(user.getUserId()), userArticleGraph)
-                cluster.append(result)
-        return mean(cluster)
+        
+        def clusterPolticalness(graph):
+            cluster = []
+            for user in network.users.itervalues():
+                #if iterations > 35 and self.politicalness == "all":
+                    #pdb.set_trace()
+                if self.politicalness == "all" or str(
+                        user.getPoliticalness()) == self.politicalness:
+                    result = self.clusterOneNode(
+                        graph.GetNI(user.getUserId()), graph)
+                    cluster.append(result)
+            return mean(cluster)
+        return [clusterPolticalness(network.userArticleGraph), clusterPolticalness(network.userArticleFriendGraph), clusterPolticalness(network.createUserUserGraph()[1])]
 
     def plot(self, experiment, network, history):
         """
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
         """
-        numIterations = len(history)
-        print self.name
-        plt.figure()
-        plt.plot(range(0, numIterations), history)
-        plt.xlabel("Number of Iterations")
-        plt.ylabel("Clustering Coefficient")
-        plt.title("Clustering Coefficient for politicalness " + str(self.politicalness) + "\n vs. Number of Itertions")
-        plt.savefig(experiment.out_path(self.safe_name + "polticialness" + str(self.politicalness) + '.png'))
-        plt.close()
+        def plotHelper(history, id):
+            numIterations = len(history)
+            print self.name
+            plt.figure()
+            plt.plot(range(0, numIterations), history)
+            plt.xlabel("Number of Iterations")
+            plt.ylabel("Clustering Coefficient")
+            plt.title("Clustering Coefficient for politicalness " + str(self.politicalness) + "\n vs. Number of Itertions")
+            plt.savefig(experiment.out_path(self.safe_name + "polticialness" + str(self.politicalness) + id + '.png'))
+            plt.close()
+
+        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+        for i, id in enumerate(ids):
+            plotHelper(map(lambda x: x[i], history), id)
 
     def save(self, experiment, history):
         """
@@ -918,20 +1032,20 @@ class ClusterPoliticalness(Metric):
         """
         util.writeCSV(experiment.out_path("clusterPoliticalness" + "_politicalness=" + self.politicalness + self.safe_name), history)
 
-class ClusterPoliticalnessWRTFriends(ClusterPoliticalness):
+# class ClusterPoliticalnessWRTFriends(ClusterPoliticalness):
 
-    def measure(self, experiment, network, iterations):
-        userArticleGraph = network.userArticleGraph
-        cluster = []
-        for user in network.users.itervalues():
-            #if iterations > 35 and self.politicalness == "all":
-                #pdb.set_trace()
-            if self.politicalness == "all" or str(
-                    user.getPoliticalness()) == self.politicalness:
-                result = self.clusterOneNode(
-                    userArticleGraph.GetNI(user.getUserId()), network.userArticleFriendGraph)
-                cluster.append(result)
-        return mean(cluster)
+#     def measure(self, experiment, network, iterations):
+#         userArticleGraph = network.userArticleGraph
+#         cluster = []
+#         for user in network.users.itervalues():
+#             #if iterations > 35 and self.politicalness == "all":
+#                 #pdb.set_trace()
+#             if self.politicalness == "all" or str(
+#                     user.getPoliticalness()) == self.politicalness:
+#                 result = self.clusterOneNode(
+#                     userArticleGraph.GetNI(user.getUserId()), network.userArticleFriendGraph)
+#                 cluster.append(result)
+#         return mean(cluster)
 
 
 class LargestConnectedComponent(Metric):
@@ -949,7 +1063,7 @@ class LargestConnectedComponent(Metric):
             print self.name
             plt.figure()
             plt.bar(range(len(elem)), elem)
-            plt.savefig(experiment.out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
+            plt.savefig(util.out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
             plt.close()
         largestComponent = map(max, history)
         plt.figure()
@@ -980,26 +1094,35 @@ class LargestConnectedComponent(Metric):
 class EigenVectors(Metric):
 
     def measure(self, experiment, network, iterations):
-        try:
-            EigvV =  snap.TFltV()
-            snap.GetEigVec(network.userArticleGraph, EigvV)
-            result = []
-            for Val in EigvV:
-                result.append(Val)
-            return sorted(result)
-        except:
-            return []
+        
+        def eigenvector(graph):
+            try:
+                EigvV =  snap.TFltV()
+                snap.GetEigVec(graph, EigvV)
+                result = []
+                for Val in EigvV:
+                    result.append(Val)
+                return sorted(result)
+            except:
+                return []
+        return [eigenvector(network.userArticleGraph), eigenvector(network.userArticleFriendGraph), eigenvector(network.createUserUserGraph()[1])]
 
     def plot(self, experiment, network, history):
-        last = history[-1]
-        print self.name
-        plt.figure()
-        plt.plot(last)
-        plt.xlabel("Rank of Eigenvector")
-        plt.ylabel("Values of Eigenvector")
-        plt.title("First Eigenvector")
-        plt.savefig(experiment.out_path(self.safe_name + ".png"))
-        plt.close()
+        
+        def plotHelper(history, id):
+            last = history[-1]
+            print self.name
+            plt.figure()
+            plt.plot(last)
+            plt.xlabel("Rank of Eigenvector")
+            plt.ylabel("Values of Eigenvector")
+            plt.title("First Eigenvector")
+            plt.savefig(experiment.out_path(self.safe_name + id + ".png"))
+            plt.close()
+
+        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+        for i, id in enumerate(ids):
+            plotHelper(map(lambda x: x[i], history), id)
 
 def getEigenVectorEigenValue(network, graph, iterations):
     matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)
@@ -1024,15 +1147,15 @@ def getEigenVectorEigenValue(network, graph, iterations):
     result = eigenvector[:, eigenvalueIdx]
     return (result, uIdOrAIdToMatrix, matrix)
 
-class EigenVectorsWRTFriends(EigenVectors):
+# class EigenVectorsWRTFriends(EigenVectors):
 
-    def measure(self, experiment, network, iterations):
-        EigvV =  snap.TFltV()
-        snap.GetEigVec(network.userArticleFriendGraph, EigvV)
-        result = []
-        for Val in EigvV:
-            result.append(Val)
-        return sorted(result)
+#     def measure(self, experiment, network, iterations):
+#         EigvV =  snap.TFltV()
+#         snap.GetEigVec(network.userArticleFriendGraph, EigvV)
+#         result = []
+#         for Val in EigvV:
+#             result.append(Val)
+#         return sorted(result)
 
 
 class MoreEigenVectors(Metric):
@@ -1090,8 +1213,8 @@ class CommonArticles(Metric):
         userArticleGraph = network.userArticleGraph
         negativeTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness1)
         posTwo = network.getUserIdsWithSpecificPoliticalness(self.politicalness2)
-        negativeTwo = random.sample(negativeTwo, min(20, len(negativeTwo)))
-        posTwo = random.sample(posTwo, min(20, len(posTwo)))
+        negativeTwo = random.sample(negativeTwo, min(40, len(negativeTwo)))
+        posTwo = random.sample(posTwo, min(40, len(posTwo)))
         commonNeighs = []
         
         for s in posTwo:

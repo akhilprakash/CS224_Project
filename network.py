@@ -7,7 +7,7 @@ from scipy.sparse import csc_matrix
 
 import util
 from user import User
-
+import networkx as nx
 
 def getMax(NIdToDistH):
     nodeId = -1
@@ -109,6 +109,32 @@ class Network(object):
             fromDestQueue.extend(self.spreadPoliticalness(dest, depth))
             depth = depth + 1
         self.getPoliticalAllUsers()
+
+    '''
+    @return: The first thing in the tuple is the networkX version of the user user graph
+             The second thing in the tuple is the snap version of the user user graph
+             The third thing in the tuple is the edge to weight dictionary
+    '''
+    def createUserUserGraph(self):
+        G = nx.Graph()
+        edgeToWeightDict = util.PairsDict()
+        userUserGraph = snap.TUNGraph.New()
+        for uId in self.users.keys():
+            userUserGraph.AddNode(uId)
+        for uId1 in self.users.keys():
+            for uId2 in self.users.keys():
+                Nbrs = snap.TIntV()
+                snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
+                if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
+                    weight = 1
+                else:
+                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
+                G.add_edge(uId1, uId2, weight = weight)
+                edgeToWeightDict[(uId1, uId2)] = weight
+                userUserGraph.AddEdge(uId1, uId2)
+        
+        return (G, userUserGraph, edgeToWeightDict)
+
 
     def calcAdjacencyMatrix(self, graph):
         counter = 0

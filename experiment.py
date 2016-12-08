@@ -31,6 +31,28 @@ class PLike(object):
 
         return PLike.TRUST[article.source][reader.politicalness]
 
+    @staticmethod
+    def individual(reader, article):
+        # Like probability is equal to a combination of the trust percentages from the data for that source
+        # a*plikeofreader with diff politcalness
+        PLike_for_source = PLike.TRUST[article.source]
+        # print PLike_for_source
+        weighting = np.array([0]*5)
+        for i in PLike_for_source.keys():
+            weighting[i] = np.random.normal((10/(np.absolute(i-reader.politicalness)+1)),
+                                            (1/np.absolute(reader.politicalness)+0.5))
+
+        '''
+        print weighting
+        print 'actual'
+        print PLike_for_source[reader.politicalness]
+        print 'indiv'
+        print (np.array(PLike_for_source.values()).dot(weighting))/np.sum(weighting)
+        '''
+
+        return (np.array(PLike_for_source.values()).dot(weighting))/np.sum(weighting)#PLike.TRUST[article.source][reader.politicalness]
+
+
 
 class Experiment(object):
 
@@ -70,7 +92,7 @@ class Experiment(object):
         self.nullRecommender = getattr(recommendation, nullRecommender)()
         if self.allAnalyses:
             self.metrics = [
-                evaluation.ReadingDistribution(),
+                #evaluation.ReadingDistribution(),
                 evaluation.PathsBetweenPoliticalnesses(),
                 evaluation.PathsBetweenPoliticalnesses(-1, 1),
                 evaluation.PathsBetweenPoliticalnesses(-2, -1),
@@ -93,8 +115,8 @@ class Experiment(object):
                 evaluation.ClusterPoliticalness("2"),
                 evaluation.ClusterPoliticalness("all"),
                 evaluation.LargestConnectedComponent(),
-                evaluation.EigenVectors(),
-                evaluation.MoreEigenVectors(),
+                #evaluation.EigenVectors(),
+                #evaluation.MoreEigenVectors(),
                 evaluation.CommonArticles(-2, 2),
                 evaluation.CommonArticles(-1, 2),
                 evaluation.CommonArticles(-2, 1),
@@ -102,12 +124,6 @@ class Experiment(object):
                 evaluation.CommonArticles(2,2),
                 evaluation.CommonArticles(-2, -2),
                 evaluation.Betweenness(),
-                evaluation.ModularityWRTFriends(),
-                evaluation.BetweennessWRTFriends(),
-                evaluation.OverallClusteringWRTFriends(),
-                evaluation.ClusterPoliticalnessWRTFriends("all"),
-                evaluation.EigenVectorsWRTFriends(),
-                evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
             self.metrics = [evaluation.Statistics(), evaluation.UserUserGraphCutMinimization()] #evaluation.GraphViz(),
