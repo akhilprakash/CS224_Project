@@ -1,8 +1,9 @@
+import itertools
 import pdb
 import random
 from sets import Set
 import snap
-import networkx as nx
+from scipy.sparse import csc_matrix
 
 import util
 from user import User
@@ -319,24 +320,44 @@ class Network(object):
             and not article.isDead
         )
 
-
-    def createUserUserGraph(self):
-        G = nx.Graph()
-        edgeToWeightDict = util.PairsDict()
+    def getUserUserGraph(self):
+        """
+        Weights are defined by the number of common articles liked.
+        The more that two people have read, the more common basis of
+        understanding they have.
+        """
+        weights = util.PairsDict()
         userUserGraph = snap.TUNGraph.New()
-        for uId in self.users.keys():
-            userUserGraph.AddNode(uId)
-        for uId1 in self.users.keys():
-            for uId2 in self.users.keys():
-                Nbrs = snap.TIntV()
-                snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
-                if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
-                    weight = 1
-                else:
-                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                G.add_edge(uId1, uId2, weight = weight)
-                edgeToWeightDict[(uId1, uId2)] = weight
-                userUserGraph.AddEdge(uId1, uId2)
-        #https://networkx.github.io/documentation/development/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
-        #betweenness_centrality(G, k=None, normalized=True, weight=None, endpoints=False, seed=None)
-        return (G, userUserGraph, edgeToWeightDict)
+        for userId in self.users:
+            userUserGraph.AddNode(userId)
+        for userA, userB in itertools.combinations(self.users, 2):
+            common_neighbors = snap.TIntV()
+            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
+            num_common = len(common_neighbors)
+            if num_common > 0:
+                weights[userA, userB] = num_common
+                userUserGraph.AddEdge(userA, userB)
+        return userUserGraph, weights
+
+    def getUserUserGraphMatrix(self):
+        """
+        Weights are defined by the number of common articles liked.
+        The more that two people have read, the more common basis of
+        understanding they have.
+        """
+        weights = []
+        i = []
+        j = []
+        for userA, userB in itertools.combinations(self.users, 2):
+            common_neighbors = snap.TIntV()
+            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
+            num_common = len(common_neighbors)
+            if num_common > 0:
+                i.append(userA)
+                j.append(userB)
+                weights.append(num_common)
+                i.append(userB)
+                j.append(userA)
+                weights.append(num_common)
+
+        return csc_matrix((weights, (i, j)))

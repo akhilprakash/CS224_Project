@@ -125,6 +125,8 @@ class CollaborativeFiltering(Recommender):
     Edge cases:
      - When articles don't have enough likes to compute similarity,
        we default to a similarity based on their sources.
+       EDIT: we default to zero similarity for these article pairs,
+       and leave these articles to be recommended by our null recommender.
      - When a reader hasn't liked enough articles to compute scores for candidate
        articles, we default to content-based recommendations.
     """
@@ -137,41 +139,51 @@ class CollaborativeFiltering(Recommender):
 
     SOURCE_SIM_WEIGHT = 1.0
 
+    def source_similarity(self, sourceA, sourceB):
+        # Cosine similarity of the source trust distributions
+        # (A . B) / (||A|| ||B||)
+        vecA = self.TRUST_VEC[sourceA]
+        vecB = self.TRUST_VEC[sourceB]
+        return vecA.dot(vecB) / math.sqrt(vecA.dot(vecA) * vecB.dot(vecB))
+
     def makeRecommendations(self, network, readers, N=1):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
+        # num_undefined = 0
+        # num_zero_intersection = 0
+        # nice = []
         for articleA, articleB in itertools.combinations(network.getArticles(), 2):
             a = articleA.articleId
             b = articleB.articleId
             ratersA = set(network.userArticleGraph.GetNI(a).GetOutEdges())
             ratersB = set(network.userArticleGraph.GetNI(b).GetOutEdges())
 
-            # Cosine similarity of the source trust distributions
-            # (A . B) / (||A|| ||B||)
-            vecA = self.TRUST_VEC[articleA.source]
-            vecB = self.TRUST_VEC[articleB.source]
-            source_similarity = vecA.dot(vecB) / math.sqrt(vecA.dot(vecA) * vecB.dot(vecB))
+            # NEW METHOD
+            # Modified Jaccard similarity, |A ^ B| / min(|A|, |B|)
+            # This makes sure that the similarity between articles with vastly different
+            # number of likes will be normalized with respect to the smaller of the
+            # two liker sets.
+            top = len(ratersA & ratersB)
+            bot = min(len(ratersA), len(ratersB))
+            sim[a, b] = top / bot if bot > 0 else 0
 
-            # Use modified Jaccard similarity with correction
-            # likes should count less for items with a lot of likes, and vice versa
+            # OLD METHOD
+            # Use Jaccard similarity with correction
             # The correction makes the similarity approach the source similarity
             # as the unions of the ratings approaches zero.
-            top = len(ratersA & ratersB)
-            bot = min(len(ratersA - ratersB), len(ratersB - ratersA)) + top
-            sim[a, b] = (top + source_similarity * self.SOURCE_SIM_WEIGHT) / (bot + self.SOURCE_SIM_WEIGHT)
+            # sim[a, b] = (top + source_similarity * self.SOURCE_SIM_WEIGHT) / (bot + self.SOURCE_SIM_WEIGHT)
 
+            # if bot == 0:
+            #     num_undefined += 1
             # if bot > 0:
-            #     sim[a, b] = (top + source_similarity) / (bot + 1.0)
-            #     print 'jaccard:', top / bot, 'sim:', source_similarity, 'modjaccard:', sim[a, b]
-            # else:
-            #     # New articles will use the full source similarity, while
-            #     # older articles will languish without a boost.
-            #     if articleA.justAdded or articleB.justAdded:
-            #         sim[a, b] = source_similarity
-            #         print 'source:', source_similarity
+            #     if top == 0:
+            #         num_zero_intersection += 1
             #     else:
-            #         sim[a, b] = source_similarity * 0.10
-            #         print 'oldsource:', source_similarity * 0.10
+            #         nice.append(top / bot)
+
+        # nice.sort()
+        # median = nice[len(nice) // 2]
+        # print 'undefined:', num_undefined, 'nonoverlapping:', num_zero_intersection, 'goodmedian:', median
 
         # For each reader:
         recs = {}
