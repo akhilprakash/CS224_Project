@@ -66,11 +66,11 @@ def human_time(*args, **kwargs):
 
 
 class ProgressBar(object):
-    def __init__(self, total=None, width=40, use_newlines=False):
+    def __init__(self, total=None, width=40):
         self.total = total
         self.width = width
-        self.use_newlines = use_newlines
         self.start = time.time()
+        self._last_line_length = 0
 
     def __enter__(self):
         return self
@@ -78,19 +78,28 @@ class ProgressBar(object):
     def _seconds_left(self, ratio):
         now = time.time()
         elapsed = now - self.start
-        return elapsed / ratio * (1. - ratio)
+        return int(elapsed / ratio * (1. - ratio))
 
     def update(self, done):
+        # Erase
+        sys.stdout.write('\r')
+        sys.stdout.write(' ' * self._last_line_length)
+        sys.stdout.write('\r')
+
+        # Draw bar
         ratio = done / self.total
         bars = int(ratio * self.width)
-        sys.stdout.write('\r[')
-        sys.stdout.write('|' * bars)
-        sys.stdout.write(' ' * (self.width - bars))
-        sys.stdout.write('] %.1f%% complete, about %d min left' %
-                         (ratio * 100, self._seconds_left(ratio) / 60.))
-        if self.use_newlines:
-            sys.stdout.write('\n')
+        line = u''.join([
+            u'\u2593' * bars,
+            u'\u2591' * (self.width - bars),
+            ' %.1f%% complete,' % (ratio * 100),
+            ' about %s left' % human_time(seconds=self._seconds_left(ratio)),
+        ])
+        sys.stdout.write(line)
         sys.stdout.flush()
+
+        # Save last line length
+        self._last_line_length = len(line)
 
     def __exit__(self, exc_type, exc_value, traceback):
         if exc_type is None:
