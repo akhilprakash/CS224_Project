@@ -34,10 +34,11 @@ class Network(object):
     def __init__(self, friendGraphFile, initialize):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
+        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        print self.friendGraph.GetNodes()
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
-        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
+        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
         if initialize == "1":
             self.initializeUsersBasedOn2Neg2()
         elif initialize == "2":

@@ -42,7 +42,7 @@ class Experiment(object):
                  recommender='Random',
                  networkInitType='1',
                  pLikeMethod='empirical',
-                 friendGraphFile='zacharys.csv',
+                 friendGraphFile='CA-GrQc.txt',
                  numRecsPerIteration=1,
                  ):
         """
