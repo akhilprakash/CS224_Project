@@ -21,7 +21,6 @@ def getMax(NIdToDistH):
 class Network(object):
     ALPHA = .8
     X_MIN = 1
-    NUMBER_OF_READERS = 10
 
     # TODO: is this based on data?
     POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .3, .2, .3, .1]
@@ -209,14 +208,14 @@ class Network(object):
             if u <= r:
                 return x
 
-    def getNextReaders(self):
+    def getNextReaders(self, N):
         result = []
         for user in self.users.itervalues():
             result.append((user, self.sampleFromPowerLawExponentialCutoff(user.getUserId())))
         # Want smallest values
         sortedResults = sorted(result, key=lambda x: x[1])
         readers = []
-        for i in range(0, self.NUMBER_OF_READERS):
+        for i in range(0, N):
             readers.append(sortedResults[i][0])
         return readers
 

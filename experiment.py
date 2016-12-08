@@ -45,6 +45,7 @@ class Experiment(object):
                  networkInitType='1',
                  pLikeMethod='empirical',
                  friendGraphFile='CA-GrQc.txt',
+                 numOnlinePerIteration=100,
                  numRecsPerIteration=1,
                  ):
         """
@@ -60,6 +61,7 @@ class Experiment(object):
         self.numIterations = numIterations
         self.allAnalyses = allAnalyses
         self.numRecsPerIteration = numRecsPerIteration
+        self.numOnlinePerIteration = numOnlinePerIteration
         self.networkInitType = networkInitType
         self.network = Network(data_path(friendGraphFile), networkInitType)
         self.pLikeMethod = pLikeMethod
@@ -160,7 +162,8 @@ class Experiment(object):
 
     def step(self, i):
         """Perform one step of the simulation."""
-        readers = self.network.getNextReaders()  # get readers that can read at this time point
+        # get readers that can read at this time point
+        readers = self.network.getNextReaders(self.numOnlinePerIteration)
 
         # Introduce new articles
         new_articles = [self.introduceArticle(i) for _ in xrange(self.numRecsPerIteration)]
