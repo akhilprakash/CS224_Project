@@ -2,6 +2,16 @@
 All metrics should be a subclass of Metric, and at least implement the measure
 method.
 """
+
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    has_matplotlib = True
+except ImportError:
+    has_matplotlib = False
+
+
 import collections
 import random
 
@@ -20,13 +30,6 @@ except ImportError:
     print 'install networkx library'
     pass
 
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib
-    matplotlib.use('Agg')
-    has_matplotlib = True
-except ImportError:
-    has_matplotlib = False
 
 
 def mean(numbers):
