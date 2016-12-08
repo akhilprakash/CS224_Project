@@ -143,11 +143,6 @@ class Experiment(object):
         for metric in self.metrics:
             self.histories[metric].append(metric.measure(self, self.network, iterations))
 
-    def killArticles(self, iterations):
-        for article in self.network.articles.itervalues():
-            if not article.getIsDead() and article.getTimeToLive() < iterations:
-                article.setIsDead(True)
-    
     def run(self):
         # Create an initial set of articles
         # (At least as many as we recommend per iteration,
@@ -166,11 +161,11 @@ class Experiment(object):
         for _ in xrange(self.numRecsPerIteration):
             self.introduceArticle(i)
 
-        # print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
-        #     sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
-        #     sum(1. for _ in self.network.getArticles()),
-        #     len(readers)
-        # )
+        print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
+            sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
+            sum(1. for _ in self.network.getArticles()),
+            len(readers)
+        )
 
         # Compute recommendations and "show" them to users
         self.runRecommendation(readers)
@@ -179,7 +174,7 @@ class Experiment(object):
         self.runAnalysis(i)
 
         # Kill articles that have reached their lifetime
-        self.killArticles(i)
+        self.network.killArticles(i)
 
     def saveResults(self):
         # Save results

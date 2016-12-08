@@ -246,7 +246,7 @@ class Network(object):
 
     def killArticles(self, t):
         # Kill articles that are past their time
-        for article in self.articles.itervalues():
+        for article in self.articles.values():
             if article.timeToLive < t:
                 article.isDead = True
 

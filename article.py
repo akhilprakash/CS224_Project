@@ -1,5 +1,6 @@
 import random
 
+
 class Article(object):
     AVERAGE_LIFETIME_EXPERIMENT_RATIO = 0.333  # articles live for a third of the simulation
 
