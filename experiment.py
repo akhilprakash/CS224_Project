@@ -11,7 +11,7 @@ import recommendation
 import util
 from article import Article
 from network import Network
-from util import data_path, out_path, print_error
+from util import data_path, out_path, print_error, with_prob
 
 
 class PLike(object):
@@ -28,6 +28,7 @@ class PLike(object):
         # Like probability is equal to the trust percentage from the data.
         # This doesn't always make sense though: very few people "trust"
         # BuzzFeed, but a lot of people still like and share their listicles.
+
         return PLike.TRUST[article.source][reader.politicalness]
 
 
@@ -39,7 +40,8 @@ class Experiment(object):
     def __init__(self,
                  numIterations=100,
                  allAnalyses=False,
-                 recommender='Random',
+                 recommender='CollaborativeFiltering',
+                 nullRecommender='Random',
                  networkInitType='1',
                  pLikeMethod='empirical',
                  friendGraphFile='zacharys.csv',
@@ -63,6 +65,7 @@ class Experiment(object):
         self.pLikeMethod = pLikeMethod
         self.pLike = getattr(PLike, pLikeMethod)
         self.recommender = getattr(recommendation, recommender)()
+        self.nullRecommender = getattr(recommendation, nullRecommender)()
         if self.allAnalyses:
             self.metrics = [
                 evaluation.ReadingDistribution(),
@@ -130,13 +133,13 @@ class Experiment(object):
         self.network.addArticle(article)
         return article
 
-    def runRecommendation(self, readers):
-        # Compute recommendations and "show" them to users
-        allRecs = self.recommender.makeRecommendations(self.network, readers, N=self.numRecsPerIteration)
+    def showRecommendations(self, recommender, readers, N):
+        print recommender
+        allRecs = recommender.makeRecommendations(self.network, readers, N=N)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
             for recommendedArticle in recs:
-                if random.random() < self.pLike(reader, recommendedArticle):
+                if with_prob(self.pLike(reader, recommendedArticle)):
                     self.network.addEdge(reader, recommendedArticle)
 
     def runAnalysis(self, iterations):
@@ -160,8 +163,7 @@ class Experiment(object):
         readers = self.network.getNextReaders()  # get readers that can read at this time point
 
         # Introduce new articles
-        for _ in xrange(self.numRecsPerIteration):
-            self.introduceArticle(i)
+        new_articles = [self.introduceArticle(i) for _ in xrange(self.numRecsPerIteration)]
 
         print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
             sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
@@ -170,10 +172,15 @@ class Experiment(object):
         )
 
         # Compute recommendations and "show" them to users
-        self.runRecommendation(readers)
+        self.showRecommendations(self.nullRecommender, readers, self.numRecsPerIteration / 2)
+        self.showRecommendations(self.recommender, readers, self.numRecsPerIteration / 2)
 
         # Analyze resulting graph at this iteration
         self.runAnalysis(i)
+
+        # Remove justAdded flag from new articles
+        for article in new_articles:
+            article.justAdded = False
 
         # Kill articles that have reached their lifetime
         self.network.reapArticles(i)
