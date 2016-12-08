@@ -42,7 +42,7 @@ class Experiment(object):
                  allAnalyses=False,
                  recommender='CollaborativeFiltering',
                  nullRecommender='Random',
-                 networkInitType='1',
+                 networkInitType='random',
                  pLikeMethod='empirical',
                  friendGraphFile='CA-GrQc.txt',
                  numOnlinePerIteration=100,
@@ -116,8 +116,11 @@ class Experiment(object):
     def _parameters(self, delimiter):
         return delimiter.join([
             "%s Recommender" % self.recommender.__class__.__name__,
+            "%s Null Recommender" % self.nullRecommender.__class__.__name__,
             "%s Political Preference" % self.networkInitType.title(),
             "%s PLike" % self.pLikeMethod.title(),
+            "%d NumOnline" % self.numOnlinePerIteration,
+            "%d NumRecs" % self.numRecsPerIteration,
             "%d Iterations" % self.numIterations,
         ])
 
@@ -136,7 +139,6 @@ class Experiment(object):
         return article
 
     def showRecommendations(self, recommender, readers, N):
-        print recommender
         allRecs = recommender.makeRecommendations(self.network, readers, N=N)
         for readerId, recs in allRecs.iteritems():
             reader = self.network.getUser(readerId)
@@ -168,11 +170,11 @@ class Experiment(object):
         # Introduce new articles
         new_articles = [self.introduceArticle(i) for _ in xrange(self.numRecsPerIteration)]
 
-        print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
-            sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
-            sum(1. for _ in self.network.getArticles()),
-            len(readers)
-        )
+        # print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
+        #     sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
+        #     sum(1. for _ in self.network.getArticles()),
+        #     len(readers)
+        # )
 
         # Compute recommendations and "show" them to users
         self.showRecommendations(self.nullRecommender, readers, self.numRecsPerIteration / 2)

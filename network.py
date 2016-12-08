@@ -31,7 +31,7 @@ class Network(object):
             maxNodeId = max(node.GetId(), maxNodeId)
         return maxNodeId
 
-    def __init__(self, friendGraphFile, initialize):
+    def __init__(self, friendGraphFile, initMethod):
         self.users = {}
         self.articles = {}
         self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
@@ -39,12 +39,14 @@ class Network(object):
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
         self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
-        if initialize == "1":
+        if initMethod == "propagation":
             self.initializeUsersBasedOn2Neg2()
-        elif initialize == "2":
+        elif initMethod == "random":
             self.initializeUsers()
-        elif initialize == "3":
+        elif initMethod == "friends":
             self.initializeUsersAccordingToFriends()
+        else:
+            raise Exception("initMethod must be propagation, random, or friends")
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
