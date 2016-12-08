@@ -2,6 +2,7 @@ import pdb
 import random
 
 import snap
+import networkx as nx
 
 import util
 from user import User
@@ -20,7 +21,6 @@ def getMax(NIdToDistH):
 class Network(object):
     ALPHA = .8
     X_MIN = 1
-    NUMBER_OF_READERS = 5
 
     # TODO: is this based on data?
     POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .3, .2, .3, .1]
@@ -31,19 +31,22 @@ class Network(object):
             maxNodeId = max(node.GetId(), maxNodeId)
         return maxNodeId
 
-    def __init__(self, friendGraphFile, initialize):
+    def __init__(self, friendGraphFile, initMethod):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
+        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        print self.friendGraph.GetNodes()
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
-        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
-        if initialize == "1":
+        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        if initMethod == "propagation":
             self.initializeUsersBasedOn2Neg2()
-        elif initialize == "2":
+        elif initMethod == "random":
             self.initializeUsers()
-        elif initialize == "3":
+        elif initMethod == "friends":
             self.initializeUsersAccordingToFriends()
+        else:
+            raise Exception("initMethod must be propagation, random, or friends")
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
@@ -233,14 +236,14 @@ class Network(object):
             if u <= r:
                 return x
 
-    def getNextReaders(self):
+    def getNextReaders(self, N):
         result = []
         for user in self.users.itervalues():
             result.append((user, self.sampleFromPowerLawExponentialCutoff(user.getUserId())))
         # Want smallest values
         sortedResults = sorted(result, key=lambda x: x[1])
         readers = []
-        for i in range(0, self.NUMBER_OF_READERS):
+        for i in range(0, N):
             readers.append(sortedResults[i][0])
         return readers
 
@@ -272,6 +275,10 @@ class Network(object):
         """Iterator over articles"""
         return self.articles.itervalues()
 
+    def getLiveArticles(self):
+        """Iterator over not-dead articles"""
+        return (article for article in self.articles.itervalues() if not article.isDead)
+
     def candidateArticlesForUser(self, userId):
         """Iterator over alive articles that are not yet liked by the given user."""
         return (
@@ -281,3 +288,24 @@ class Network(object):
             and not article.isDead
         )
 
+
+    def createUserUserGraph(self):
+        G = nx.Graph()
+        edgeToWeightDict = util.PairsDict()
+        userUserGraph = snap.TUNGraph.New()
+        for uId in self.users.keys():
+            userUserGraph.AddNode(uId)
+        for uId1 in self.users.keys():
+            for uId2 in self.users.keys():
+                Nbrs = snap.TIntV()
+                snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
+                if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
+                    weight = 1
+                else:
+                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
+                G.add_edge(uId1, uId2, weight = weight)
+                edgeToWeightDict[(uId1, uId2)] = weight
+                userUserGraph.AddEdge(uId1, uId2)
+        #https://networkx.github.io/documentation/development/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
+        #betweenness_centrality(G, k=None, normalized=True, weight=None, endpoints=False, seed=None)
+        return (G, userUserGraph, edgeToWeightDict)

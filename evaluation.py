@@ -6,6 +6,7 @@ import snap
 import random
 import util
 from util import print_error
+from collections import defaultdict
 
 import matplotlib
 matplotlib.use('Agg')
@@ -119,6 +120,7 @@ class Statistics(Metric):
         numLiked = {userID: 0 for userID in userIDs} # Number of articles each user liked
         timesLiked = {articleID: 0 for articleID in articleIDs} # Number of times each article was liked
         numUserTypes = {2: 0, 1: 0, 0: 0, -1: 0, -2: 0}
+        likedFromSource = defaultdict(int)
         # articleIDs = network.articles.keys()
         # userPOs = [network.getUser(userID).politicalness for userID in userIDs]
 
@@ -140,12 +142,16 @@ class Statistics(Metric):
                 numLiked[userID] += 1
                 timesLiked[article.articleId] += 1
                 timesReadByType[userPO][article.articleId] += 1
+                likedFromSource[article.getSource()] += 1
 
         print "userID: number of articles liked"
         print numLiked
 
         print "articleID: number of users liked"
         print timesLiked
+
+        print "source: number of times an article was liked from this source"
+        print likedFromSource
 
         print self.name
         plt.figure()
@@ -156,6 +162,18 @@ class Statistics(Metric):
         plt.savefig(experiment.out_path(self.safe_name + " NumArticlesLiked" + ".png"))
         plt.close()
 
+        '''
+        print self.name
+        plt.figure()
+        plt.plot(range(0, len(likedFromSource.keys())), likedFromSource.keys())
+        plt.xticks(range(0, len(likedFromSource.keys())), likedFromSource.keys())
+        plt.xticks(range(0, len(likedFromSource.keys())), likedFromSource.keys(), rotation=45)  # writes strings with 45 degree angle
+        plt.xlabel("Source")
+        plt.ylabel("Number of Articles Liked from Source")
+        plt.title("Number of Articles Liked from Each Source \n " + str(experiment.parameters))
+        plt.savefig(experiment.out_path(self.safe_name + " LikedFromSource" + ".png"))
+        plt.close()
+        '''
 
         plt.figure()
         plt.plot(range(0, len(timesLiked.keys())), sorted(timesLiked.values()))
