@@ -35,7 +35,7 @@ class Random(Recommender):
     """
     def makeRecommendations(self, network, readers, N=1):
         return {
-            r.userId: random.sample(list(network.articlesNotLikedByUser(r.userId)), N)
+            r.userId: random.sample(list(network.candidateArticlesForUser(r.userId)), N)
             for r in readers
         }
 
@@ -48,7 +48,7 @@ class Popular(Recommender):
         def numLikes(article):
             return network.userArticleGraph.GetNI(article.getArticleId()).GetDeg()
         return {
-            reader.userId: heapq.nlargest(N, network.articlesNotLikedByUser(reader.userId), numLikes)
+            reader.userId: heapq.nlargest(N, network.candidateArticlesForUser(reader.userId), numLikes)
             for reader in readers
         }
 
@@ -70,7 +70,7 @@ class ContentBased(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         recs = {}
         for reader in readers:
-            candidates = network.articlesNotLikedByUser(reader.userId)
+            candidates = network.candidateArticlesForUser(reader.userId)
             recs[reader.userId] = heapq.nlargest(N, candidates, lambda c: self.TRUST[c.source][reader.politicalness])
         return recs
 
@@ -157,7 +157,7 @@ class CollaborativeFiltering(Recommender):
         # For each reader:
         recs = {}
         for reader in readers:
-            candidateArticles = list(network.articlesNotLikedByUser(reader.userId))
+            candidateArticles = list(network.candidateArticlesForUser(reader.userId))
             if len(candidateArticles) >= N:
                 # Compute dot product between the user's rating vector and the item-item similarity vector
                 # for each candidate article. For each candidate article, this is basically the sum of the similarities

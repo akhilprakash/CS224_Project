@@ -221,14 +221,33 @@ class Network(object):
     def getUser(self, userId):
         return self.users[userId]
 
-    # v These convenience iterators only provide live articles v
+    def reapArticles(self, t):
+        # Kill articles that are past their time
+        for article in self.articles.values():
+            if article.timeToLive < t:
+                article.isDead = True
+                numLikes = self.userArticleGraph.GetNI(article.articleId).GetDeg()
+
+                # Completely remove articles that never got likes
+                if numLikes == 0:
+                    self.removeArticle(article.articleId)
+
+    def removeUnlikedArticles(self):
+        for article in self.articles.values():
+            numLikes = self.userArticleGraph.GetNI(article.articleId).GetDeg()
+            if numLikes == 0:
+                self.removeArticle(article.articleId)
+
+    def articlesLikedByUser(self, userId):
+        """Iterator over the articles liked by the given user."""
+        return (self.articles[i] for i in self.userArticleGraph.GetNI(userId).GetOutEdges())
 
     def getArticles(self):
-        """Iterator over articles that aren't dead."""
-        return (article for article in self.articles.itervalues() if not article.isDead)
+        """Iterator over articles"""
+        return self.articles.itervalues()
 
-    def articlesNotLikedByUser(self, userId):
-        """Iterator over articles that are not yet liked by the given user."""
+    def candidateArticlesForUser(self, userId):
+        """Iterator over alive articles that are not yet liked by the given user."""
         return (
             article
             for article in self.articles.itervalues()
@@ -236,20 +255,3 @@ class Network(object):
             and not article.isDead
         )
 
-    def articlesLikedByUser(self, userId):
-        """Iterator over the articles liked by the given user."""
-        return (
-            self.articles[i]
-            for i in self.userArticleGraph.GetNI(userId).GetOutEdges()
-            if not self.articles[i].isDead
-        )
-
-    def killArticles(self, t):
-        # Kill articles that are past their time
-        for article in self.articles.values():
-            if article.timeToLive < t:
-                article.isDead = True
-
-                # Completely remove articles that never got likes
-                if self.userArticleGraph.GetNI(article.articleId).GetDeg() == 0:
-                    self.removeArticle(article.articleId)

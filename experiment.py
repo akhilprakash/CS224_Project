@@ -153,6 +153,8 @@ class Experiment(object):
         for i in util.visual_xrange(self.numIterations, use_newlines=False):
             self.step(i)
 
+        self.network.removeUnlikedArticles()
+
     def step(self, i):
         """Perform one step of the simulation."""
         readers = self.network.getNextReaders()  # get readers that can read at this time point
@@ -174,7 +176,7 @@ class Experiment(object):
         self.runAnalysis(i)
 
         # Kill articles that have reached their lifetime
-        self.network.killArticles(i)
+        self.network.reapArticles(i)
 
     def saveResults(self):
         # Save results
