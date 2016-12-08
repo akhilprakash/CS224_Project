@@ -40,7 +40,7 @@ class PLike(object):
         weighting = np.array([0]*5)
         for i in PLike_for_source.keys():
             weighting[i] = np.random.normal((10/(np.absolute(i-reader.politicalness)+1)),
-                                            (1/np.absolute(reader.politicalness)+0.5))
+                                            (1/(np.absolute(reader.politicalness)+0.5)))
 
         '''
         print weighting
