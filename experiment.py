@@ -105,7 +105,7 @@ class Experiment(object):
                 evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
-            self.metrics = [evaluation.GraphViz(), evaluation.Statistics()]
+            self.metrics = [evaluation.Statistics()] #evaluation.GraphViz(), 
         self.histories = defaultdict(list)
 
     def _parameters(self, delimiter):
