@@ -157,7 +157,7 @@ class Experiment(object):
         for _ in xrange(self.numRecsPerIteration * 4):
             self.introduceArticle(0)
 
-        for i in util.visual_xrange(self.numIterations, use_newlines=False):
+        for i in util.visual_xrange(self.numIterations):
             self.step(i)
 
         self.network.removeUnlikedArticles()
