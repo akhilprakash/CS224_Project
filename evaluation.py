@@ -2,14 +2,17 @@
 All metrics should be a subclass of Metric, and at least implement the measure
 method.
 """
-import snap
+import collections
 import random
+
+import snap
+import numpy as np
+from scipy.sparse.linalg import eigsh
+from scipy.sparse.csgraph import laplacian
+
 import util
 from util import print_error
 from collections import defaultdict
-
-import matplotlib
-matplotlib.use('Agg')
 
 try:
     import networkx as nx
@@ -19,13 +22,12 @@ except ImportError:
 
 try:
     import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.use('Agg')
     has_matplotlib = True
 except ImportError:
     has_matplotlib = False
 
-import scipy
-import numpy
-import collections
 
 def mean(numbers):
     return float(sum(numbers)) / max(len(numbers), 1)
@@ -1136,8 +1138,8 @@ def getEigenVectorEigenValue(network, graph, iterations):
     #print matrix
     #print len(matrix)
     #print len(matrix[0])
-    laplacian = scipy.sparse.csgraph.laplacian(numpy.array(matrix))
-    eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
+    laplacian = scipy.sparse.csgraph.laplacian(np.array(matrix))
+    eigenvalue, eigenvector = np.linalg.eig(laplacian)
     #print eigenvalue
     #print eigenvector
     #result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
@@ -1174,7 +1176,7 @@ class MoreEigenVectors(Metric):
         #     matrix[uIdOrAIdToMatrix[src]][uIdOrAIdToMatrix[dest]] = 1
         #     matrix[uIdOrAIdToMatrix[dest]][uIdOrAIdToMatrix[src]] = 1
         # laplacian = scipy.sparse.csgraph.laplacian(matrix)
-        # eigenvalue, eigenvector = numpy.linalg.eig(laplacian)
+        # eigenvalue, eigenvector = np.linalg.eig(laplacian)
         # result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
         result = getEigenVectorEigenValue(network, network.userArticleGraph, iterations)
         util.writeCSV(experiment.out_path("adjacencyMatrix_iterations=" + str(iterations)), result[2])
@@ -1286,3 +1288,35 @@ class VisualizeGraph(Metric):
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("eigenvectorsgraphrepresentation"), history)
+
+
+class UserUserGraphCutMinimization(Metric):
+    def measure(self, experiment, network, iterations):
+        pass
+
+    def plot(self, experiment, network, history):
+        # Try to cluster into two clusters
+        G = network.getUserUserGraphMatrix()
+        L_normed = laplacian(G, normed=True)
+        w, v = eigsh(L_normed, k=2, which='SM')
+        print 'eigvalues:', w
+        assignments = (v[:, 1] > 0)
+
+        # Count distribution of political preference in each cluster
+        countsA = collections.Counter()
+        countsB = collections.Counter()
+        for userId in xrange(len(assignments)):
+            user = network.users.get(userId)
+            if user is None:
+                continue
+            if assignments[userId] > 0:
+                countsA[user.politicalness] += 1
+            else:
+                countsB[user.politicalness] += 1
+
+        # Display counts
+        print 'Cluster A:', countsA
+        print 'Cluster B:', countsB
+
+
+

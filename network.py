@@ -1,8 +1,9 @@
+import itertools
 import pdb
 import random
-
+from sets import Set
 import snap
-import networkx as nx
+from scipy.sparse import csc_matrix
 
 import util
 from user import User
@@ -47,9 +48,11 @@ class Network(object):
             self.initializeUsersAccordingToFriends()
         else:
             raise Exception("initMethod must be propagation, random, or friends")
+        print "done initializing"
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
+        retVal = []
         for newNode in self.friendGraph.GetNI(nodeId).GetOutEdges():
             #either pass on political, political - 1, oor poltial + 1
             weights = [.3 + depth, .5 + depth, .3 + depth]
@@ -68,7 +71,8 @@ class Network(object):
                     self.users[newNode].setPoliticalness(political)
                 else:
                     self.users[newNode].setPoliticalness(political+1)
-        return [v for v in self.friendGraph.GetNI(nodeId).GetOutEdges()]
+            retVal.append(newNode)
+        return retVal
 
     def areUsersUnassigned(self):
         for user in self.users.itervalues():
@@ -83,30 +87,57 @@ class Network(object):
         for node in self.friendGraph.Nodes():
             user = User("NA", node.GetId())
             self.addUser(user)
+        components = snap.TCnComV()
+        snap.GetWccs(self.friendGraph, components)
+        print ("Number of weakly connected components: " + str(len(components)))
+        for component in components:
+            nodesInComponent = []
+            for node in self.friendGraph.Nodes():
+                if component.IsNIdIn(node.GetId()):
+                    nodesInComponent.append(node.GetId())
+            counter = 0
+            sourceId = -1
+            destId = -1
+            longestPath = -1
+            for source in nodesInComponent:
+                if counter > 500:
+                    print "broke"
+                    print longestPath
+                    break
+                NIdToDistH = snap.TIntH()
+                #print source
+                snap.GetShortPath(self.friendGraph, source, NIdToDistH)
+                result = getMax(NIdToDistH)
+                if result[1] > longestPath:
+                    sourceId = source
+                    destId = result[0]
+                counter = counter + 1
 
-        sourceId = -1
-        destId = -1
-        longestPath = -1
-        for source in self.friendGraph.Nodes():
-            NIdToDistH = snap.TIntH()
-            snap.GetShortPath(self.friendGraph, source.GetId(), NIdToDistH)
-            result = getMax(NIdToDistH)
-            if result[1] > longestPath:
-                sourceId = source.GetId()
-                destId = result[0]
-
-        #arbitrarly assign source ot -2 and dest to 2
-        self.users[sourceId].setPoliticalness(-2)
-        self.users[destId].setPoliticalness(2)
-        fromSourceQueue = self.spreadPoliticalness(sourceId, 0)
-        fromDestQueue = self.spreadPoliticalness(destId, 0)
-        depth = 1
-        while self.areUsersUnassigned():
-            source = fromSourceQueue.pop(0)
-            fromSourceQueue.extend(self.spreadPoliticalness(source, depth))
-            dest = fromDestQueue.pop(0)
-            fromDestQueue.extend(self.spreadPoliticalness(dest, depth))
-            depth = depth + 1
+            #arbitrarly assign source ot -2 and dest to 2
+            self.users[sourceId].setPoliticalness(-2)
+            self.users[destId].setPoliticalness(2)
+            fromSourceQueue = self.spreadPoliticalness(sourceId, 0)
+            fromDestQueue = self.spreadPoliticalness(destId, 0)
+            depth = 1
+            visited = Set()
+            while self.areUsersUnassigned():
+                #print "Source queue length" + str(len(fromSourceQueue))
+                #print "Dest queue length" + str(len(fromDestQueue))
+                if len(fromSourceQueue) != 0:
+                    source = fromSourceQueue.pop(0)
+                    if not source in visited:
+                        visited.add(source)
+                        fromSourceQueue.extend(self.spreadPoliticalness(source, depth))
+                if len(fromDestQueue) != 0:
+                    dest = fromDestQueue.pop(0)
+                    if not dest in visited:
+                        visited.add(dest)
+                        fromDestQueue.extend(self.spreadPoliticalness(dest, depth))
+                if len(fromSourceQueue) == 0 and len(fromDestQueue) == 0 and self.areUsersUnassigned():
+                    break
+                depth = depth + 1
+        if self.areUsersUnassigned():
+            raise Exception("Did not assign all suers polticalness")
         self.getPoliticalAllUsers()
 
     '''
@@ -213,6 +244,7 @@ class Network(object):
                 if potlicalnessOfFriends[idx] == 0:
                     pdb.set_trace()
                 user.setPoliticalness(idx -2)
+                print "finished a user"
         self.getPoliticalAllUsers()
 
     def getBeta(self, userNodeId, slope=.5):
@@ -288,24 +320,44 @@ class Network(object):
             and not article.isDead
         )
 
-
-    def createUserUserGraph(self):
-        G = nx.Graph()
-        edgeToWeightDict = util.PairsDict()
+    def getUserUserGraph(self):
+        """
+        Weights are defined by the number of common articles liked.
+        The more that two people have read, the more common basis of
+        understanding they have.
+        """
+        weights = util.PairsDict()
         userUserGraph = snap.TUNGraph.New()
-        for uId in self.users.keys():
-            userUserGraph.AddNode(uId)
-        for uId1 in self.users.keys():
-            for uId2 in self.users.keys():
-                Nbrs = snap.TIntV()
-                snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
-                if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
-                    weight = 1
-                else:
-                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                G.add_edge(uId1, uId2, weight = weight)
-                edgeToWeightDict[(uId1, uId2)] = weight
-                userUserGraph.AddEdge(uId1, uId2)
-        #https://networkx.github.io/documentation/development/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
-        #betweenness_centrality(G, k=None, normalized=True, weight=None, endpoints=False, seed=None)
-        return (G, userUserGraph, edgeToWeightDict)
+        for userId in self.users:
+            userUserGraph.AddNode(userId)
+        for userA, userB in itertools.combinations(self.users, 2):
+            common_neighbors = snap.TIntV()
+            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
+            num_common = len(common_neighbors)
+            if num_common > 0:
+                weights[userA, userB] = num_common
+                userUserGraph.AddEdge(userA, userB)
+        return userUserGraph, weights
+
+    def getUserUserGraphMatrix(self):
+        """
+        Weights are defined by the number of common articles liked.
+        The more that two people have read, the more common basis of
+        understanding they have.
+        """
+        weights = []
+        i = []
+        j = []
+        for userA, userB in itertools.combinations(self.users, 2):
+            common_neighbors = snap.TIntV()
+            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
+            num_common = len(common_neighbors)
+            if num_common > 0:
+                i.append(userA)
+                j.append(userB)
+                weights.append(num_common)
+                i.append(userB)
+                j.append(userA)
+                weights.append(num_common)
+
+        return csc_matrix((weights, (i, j)))
