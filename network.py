@@ -21,7 +21,7 @@ def getMax(NIdToDistH):
 class Network(object):
     ALPHA = .8
     X_MIN = 1
-    NUMBER_OF_READERS = 5
+    NUMBER_OF_READERS = 10
 
     # TODO: is this based on data?
     POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .3, .2, .3, .1]
@@ -246,6 +246,10 @@ class Network(object):
     def getArticles(self):
         """Iterator over articles"""
         return self.articles.itervalues()
+
+    def getLiveArticles(self):
+        """Iterator over not-dead articles"""
+        return (article for article in self.articles.itervalues() if not article.isDead)
 
     def candidateArticlesForUser(self, userId):
         """Iterator over alive articles that are not yet liked by the given user."""

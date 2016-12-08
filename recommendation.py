@@ -90,6 +90,7 @@ class Instagram(Recommender):
                 for friend in network.friendGraph.GetNI(reader.userId).GetOutEdges()
                 for article in network.articlesLikedByUser(friend)
                 if not network.userArticleGraph.IsEdge(article.articleId, friend)
+                and not article.isDead
             ]
             # If there aren't enough candidates use default recommender
             if len(candidates) >= N:
@@ -134,6 +135,8 @@ class CollaborativeFiltering(Recommender):
         for source, trust in TRUST.iteritems()
     }
 
+    SOURCE_SIM_WEIGHT = 1.0
+
     def makeRecommendations(self, network, readers, N=1):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
@@ -149,10 +152,26 @@ class CollaborativeFiltering(Recommender):
             vecB = self.TRUST_VEC[articleB.source]
             source_similarity = vecA.dot(vecB) / math.sqrt(vecA.dot(vecA) * vecB.dot(vecB))
 
-            # Use Jaccard similarity with correction to prevent divide-by-zero
+            # Use modified Jaccard similarity with correction
+            # likes should count less for items with a lot of likes, and vice versa
             # The correction makes the similarity approach the source similarity
             # as the unions of the ratings approaches zero.
-            sim[a, b] = (len(ratersA & ratersB) + source_similarity) / (len(ratersA | ratersB) + 1.)
+            top = len(ratersA & ratersB)
+            bot = min(len(ratersA - ratersB), len(ratersB - ratersA)) + top
+            sim[a, b] = (top + source_similarity * self.SOURCE_SIM_WEIGHT) / (bot + self.SOURCE_SIM_WEIGHT)
+
+            # if bot > 0:
+            #     sim[a, b] = (top + source_similarity) / (bot + 1.0)
+            #     print 'jaccard:', top / bot, 'sim:', source_similarity, 'modjaccard:', sim[a, b]
+            # else:
+            #     # New articles will use the full source similarity, while
+            #     # older articles will languish without a boost.
+            #     if articleA.justAdded or articleB.justAdded:
+            #         sim[a, b] = source_similarity
+            #         print 'source:', source_similarity
+            #     else:
+            #         sim[a, b] = source_similarity * 0.10
+            #         print 'oldsource:', source_similarity * 0.10
 
         # For each reader:
         recs = {}
