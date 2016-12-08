@@ -126,8 +126,7 @@ class Experiment(object):
 
     def introduceArticle(self, iterations):
         # Create an article from a random source
-        article = Article(np.random.choice(self.SOURCES, p=self.WEIGHTS_SOURCES))
-        article.incrementTimeToLive(iterations)
+        article = Article(np.random.choice(self.SOURCES, p=self.WEIGHTS_SOURCES), self.numIterations, iterations)
         self.network.addArticle(article)
         return article
 
@@ -166,6 +165,12 @@ class Experiment(object):
         # Introduce new articles
         for _ in xrange(self.numRecsPerIteration):
             self.introduceArticle(i)
+
+        # print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
+        #     sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
+        #     sum(1. for _ in self.network.getArticles()),
+        #     len(readers)
+        # )
 
         # Compute recommendations and "show" them to users
         self.runRecommendation(readers)

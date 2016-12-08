@@ -137,10 +137,6 @@ class CollaborativeFiltering(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         # Compute similarities between all unique pairs of articles O(n^2)
         sim = PairsDict()
-        # print "NUM ARTICLES NOT LIKED YET %d/%d" % (
-        #     sum(network.userArticleGraph.GetNI(article.articleId).GetDeg() == 0 for article in network.getArticles()),
-        #     sum(1 for _ in network.getArticles())
-        # )
         for articleA, articleB in itertools.combinations(network.getArticles(), 2):
             a = articleA.articleId
             b = articleB.articleId

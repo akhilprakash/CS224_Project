@@ -130,6 +130,11 @@ class Network(object):
         self.userArticleGraph.AddNode(article.getArticleId())
         self.userArticleFriendGraph.AddNode(article.getArticleId())
 
+    def removeArticle(self, articleId):
+        del self.articles[articleId]
+        self.userArticleGraph.DelNode(articleId)
+        self.userArticleFriendGraph.DelNode(articleId)
+
     def addEdge(self, user, article):
         uId = user.getUserId()
         aId = article.getArticleId()
@@ -238,3 +243,13 @@ class Network(object):
             for i in self.userArticleGraph.GetNI(userId).GetOutEdges()
             if not self.articles[i].isDead
         )
+
+    def killArticles(self, t):
+        # Kill articles that are past their time
+        for article in self.articles.itervalues():
+            if article.timeToLive < t:
+                article.isDead = True
+
+                # Completely remove articles that never got likes
+                if self.userArticleGraph.GetNI(article.articleId).GetDeg() == 0:
+                    self.removeArticle(article.articleId)
