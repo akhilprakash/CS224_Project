@@ -11,7 +11,7 @@ import numpy as np
 
 def weighted_choice(weights):
     weights = np.asarray(weights)
-    weights /= np.sum(weights)
+    weights = weights / np.sum(weights)
     return np.random.choice(range(len(weights)), p=weights)
 
 

@@ -65,7 +65,7 @@ class Experiment(object):
         self.recommender = getattr(recommendation, recommender)()
         if self.allAnalyses:
             self.metrics = [
-                evaluation.ReadingDistribution(),
+                #evaluation.ReadingDistribution(),
                 evaluation.PathsBetweenPoliticalnesses(),
                 evaluation.PathsBetweenPoliticalnesses(-1, 1),
                 evaluation.PathsBetweenPoliticalnesses(-2, -1),
@@ -88,8 +88,8 @@ class Experiment(object):
                 evaluation.ClusterPoliticalness("2"),
                 evaluation.ClusterPoliticalness("all"),
                 evaluation.LargestConnectedComponent(),
-                evaluation.EigenVectors(),
-                evaluation.MoreEigenVectors(),
+                #evaluation.EigenVectors(),
+                #evaluation.MoreEigenVectors(),
                 evaluation.CommonArticles(-2, 2),
                 evaluation.CommonArticles(-1, 2),
                 evaluation.CommonArticles(-2, 1),
@@ -97,12 +97,6 @@ class Experiment(object):
                 evaluation.CommonArticles(2,2),
                 evaluation.CommonArticles(-2, -2),
                 evaluation.Betweenness(),
-                evaluation.ModularityWRTFriends(),
-                evaluation.BetweennessWRTFriends(),
-                evaluation.OverallClusteringWRTFriends(),
-                evaluation.ClusterPoliticalnessWRTFriends("all"),
-                evaluation.EigenVectorsWRTFriends(),
-                evaluation.MoreEigenVectorsWRTFriends(),
             ]
         else:
             self.metrics = [evaluation.Statistics()] #evaluation.GraphViz(), 
