@@ -2,7 +2,7 @@ import random
 
 
 class Article(object):
-    AVERAGE_LIFETIME_EXPERIMENT_RATIO = 0.333  # articles live for a third of the simulation
+    AVERAGE_LIFETIME_EXPERIMENT_RATIO = 0.10  # articles live for a third of the simulation
 
     def __init__(self, source, numIterations, t, articleId=None):
         average_ttl = self.AVERAGE_LIFETIME_EXPERIMENT_RATIO * numIterations
@@ -10,6 +10,7 @@ class Article(object):
         self.timeToLive = t + random.expovariate(lambd=1. / average_ttl)
         self.articleId = articleId
         self.isDead = False
+        self.justAdded = True
 
     def getSource(self):
         return self.source
