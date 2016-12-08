@@ -2,6 +2,7 @@ import pdb
 import random
 
 import snap
+import networkx as nx
 
 import util
 from user import User
@@ -255,3 +256,24 @@ class Network(object):
             and not article.isDead
         )
 
+
+    def createUserUserGraph(self):
+        G = nx.Graph()
+        edgeToWeightDict = util.PairsDict()
+        userUserGraph = snap.TUNGraph.New()
+        for uId in self.users.keys():
+            userUserGraph.AddNode(uId)
+        for uId1 in self.users.keys():
+            for uId2 in self.users.keys():
+                Nbrs = snap.TIntV()
+                snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
+                if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
+                    weight = 1
+                else:
+                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
+                G.add_edge(uId1, uId2, weight = weight)
+                edgeToWeightDict[(uId1, uId2)] = weight
+                userUserGraph.AddEdge(uId1, uId2)
+        #https://networkx.github.io/documentation/development/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
+        #betweenness_centrality(G, k=None, normalized=True, weight=None, endpoints=False, seed=None)
+        return (G, userUserGraph, edgeToWeightDict)
