@@ -126,6 +126,7 @@ class Statistics(Metric):
         timesLiked = {articleID: 0 for articleID in articleIDs} # Number of times each article was liked
         numUserTypes = {2: 0, 1: 0, 0: 0, -1: 0, -2: 0}
         likedFromSource = defaultdict(int)
+        POs_of_readers = {articleID: [] for articleID in articleIDs} #articleID: [PO of each user that read]
         # articleIDs = network.articles.keys()
         # userPOs = [network.getUser(userID).politicalness for userID in userIDs]
 
@@ -148,15 +149,21 @@ class Statistics(Metric):
                 timesLiked[article.articleId] += 1
                 timesReadByType[userPO][article.articleId] += 1
                 likedFromSource[article.getSource()] += 1
+                POs_of_readers[article.articleId].append(userPO)
 
         print "userID: number of articles liked"
-        print numLiked
+        # print numLiked
 
         print "articleID: number of users liked"
-        print timesLiked
+        # print timesLiked
+
+        print "articleID: POs of users that liked"
+        print POs_of_readers
 
         print "source: number of times an article was liked from this source"
         print likedFromSource
+
+
 
         print self.name
         plt.figure()
@@ -214,12 +221,56 @@ class Statistics(Metric):
 
 
 
+        # Variance of POs of users that liked each article, ordered by variance of article
+        # dict of variances
+        reader_PO_variance = {articleID: 0 for articleID in articleIDs}
+        for articleID in reader_PO_variance.keys():
+            reader_PO_variance[articleID] = np.var(POs_of_readers[articleID])
+
+        IDs, vars = zip(*sorted(zip(reader_PO_variance.keys(), reader_PO_variance.values()), key = lambda x: x[1]))
+
+        numLikes = []
+        # Build list of number of likes ordered by same ordering as var
+        for i in range(0, len(IDs)):
+            numLikes.append(timesLiked[IDs[i]])
+
+        print reader_PO_variance
+        print "IDs"
+        print IDs
+        print "vars"
+        print vars
+
+        # Plot variance of POs of those who have liked each article, ordered by var
+        '''
+        plt.figure()
+        plt.plot(range(0, len(vars)), 0.0 + (np.array(numLikes)/len(userIDs)), 'kx', range(0, len(vars)), vars, 'r-')
+        # plt.legend(
+        #    ["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"])
+        plt.xlabel("Sorted Article ID")
+        plt.ylabel("Variance in Users")
+        plt.title("Variance in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters))
+        plt.legend(["Perc. of Users Who Liked Article", "Variance in Pol. Orient. of Users"])
+
+        plt.savefig(experiment.out_path(self.safe_name + " LikerVar" + ".png"))
+        plt.close()
+        '''
 
 
-        # Number of times pair of users read same article
+        fig, ax1 = plt.subplots()
+
+        ax2 = ax1.twinx()
+        ax1.plot(range(0, len(vars)), numLikes, 'kx')
+        ax2.plot(range(0, len(vars)), vars, 'r-')
+
+        ax1.set_xlabel('Ordered ArticleID')
+        ax1.set_ylabel('Number of Users Who Liked Article', color='k')
+        ax2.set_ylabel('Variance in Pol. Orient. of Users Who Liked Article', color='r')
+        plt.title("Variance in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters))
+        plt.savefig(experiment.out_path(self.safe_name + " LikerVar" + ".png"))
+        plt.close()
+
+            # Number of times pair of users read same article
         # Number of times user read an article from each source
-
-
 
         # Number of users that read each article
         # Types of users that read each article (skewedness in distribution in types of user that read each article?)
@@ -228,47 +279,6 @@ class Statistics(Metric):
         # Variance in who read each article
 
 
-
-
-        '''
-        last = history[-1][0]
-        for key, value in last.items():
-            # value is a dictionary
-            keys = []
-            vals = []
-            for k1, v1 in value.items():
-                keys.append(k1)
-                vals.append(v1)
-            print self.name
-            plt.figure()
-            plt.bar(keys, vals, color="blue")
-            plt.xlabel("Article Politicalness")
-            plt.ylabel("Frequency")
-            plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
-            # make this a mosaic plot later
-            plt.savefig(experiment.out_path(self.safe_name + "key=" + str(key) + ".png"))
-            plt.close()
-        numUsersWithPoliticalness = history[-1][1]
-        for key, value in last.items():
-            # value is a dictionary
-            keys = []
-            vals = []
-            for k1, v1 in value.items():
-                keys.append(k1)
-                if numUsersWithPoliticalness[k1] != 0:
-                    vals.append(v1 / (1.0 * numUsersWithPoliticalness[k1]))
-                else:
-                    vals.append(0)
-            print self.name
-            plt.figure()
-            plt.bar(keys, vals, color="blue")
-            plt.xlabel("Article Politicalness")
-            plt.ylabel("Frequency Normalized bby number of users")
-            plt.title("Which Articles do Users with politicalness " + str(key) + " Read")
-            # make this a mosaic plot later
-            plt.savefig(experiment.out_path(self.safe_name + "Normalized key=" + str(key) + ".png"))
-            plt.close()
-        '''
 
     def save(self, experiment, history):
         pass
