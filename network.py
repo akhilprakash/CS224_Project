@@ -16,7 +16,7 @@ def getMax(NIdToDistH):
         if NIdToDistH[item] > longestPath:
             longestPath = NIdToDistH[item]
             nodeId = item
-    return (item, longestPath)
+    return (nodeId, longestPath)
 
 
 class Network(object):
@@ -35,11 +35,17 @@ class Network(object):
     def __init__(self, friendGraphFile, initMethod):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        if friendGraphFile[-3:] == "csv":
+            self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")    
+        else:
+            self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
         print self.friendGraph.GetNodes()
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
-        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        if friendGraphFile[-3:] == "csv":
+            self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
+        else:
+            self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
         if initMethod == "propagation":
             self.initializeUsersBasedOn2Neg2()
         elif initMethod == "random":
@@ -100,7 +106,7 @@ class Network(object):
             destId = -1
             longestPath = -1
             for source in nodesInComponent:
-                if counter > 500:
+                if counter > 600:
                     print "broke"
                     print longestPath
                     break
@@ -156,12 +162,12 @@ class Network(object):
                 Nbrs = snap.TIntV()
                 snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
                 if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
-                    weight = 1
+                    weight = 0
                 else:
-                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                G.add_edge(uId1, uId2, weight = weight)
-                edgeToWeightDict[(uId1, uId2)] = weight
-                userUserGraph.AddEdge(uId1, uId2)
+                    weight = float(len(Nbrs)) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
+                    G.add_edge(uId1, uId2, weight = weight)
+                    edgeToWeightDict[(uId1, uId2)] = weight
+                    userUserGraph.AddEdge(uId1, uId2)
         
         return (G, userUserGraph, edgeToWeightDict)
 
@@ -275,7 +281,7 @@ class Network(object):
         # Want smallest values
         sortedResults = sorted(result, key=lambda x: x[1])
         readers = []
-        for i in range(0, N):
+        for i in range(0, min(N, len(sortedResults))):
             readers.append(sortedResults[i][0])
         return readers
 
