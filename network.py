@@ -3,12 +3,11 @@ import pdb
 import random
 from sets import Set
 import snap
-from scipy.sparse import csc_matrix
-import evaluation
 import util
 from user import User
 import networkx as nx
 import numpy as np
+import heapq
 
 
 def getMax(NIdToDistH):
@@ -268,35 +267,25 @@ class Network(object):
     def getBeta(self, userNodeId, slope=.5):
         return self.userArticleGraph.GetNI(userNodeId).GetOutDeg() * slope
 
-    def powerLawExponentialCutoff(self, userNodeId, x):
-        beta = self.getBeta(userNodeId)
-        return beta
-
-    # TODO: verify that this works and is efficient enough?
     def sampleFromPowerLawExponentialCutoff(self, userNodeId):
         # Rejection sampling
         # g is uniform 0,1
-        M = self.powerLawExponentialCutoff(userNodeId, self.X_MIN)
+        M = self.getBeta(userNodeId)
         if M == 0:
             # when have no edges
             return 10 * random.random()
+        c = 0
         while True:
             x = random.random()
-            r = self.powerLawExponentialCutoff(userNodeId, x) / M
+            r = self.getBeta(userNodeId) / M
             u = random.random()
             if u <= r:
                 return x
+            c += 1
 
     def getNextReaders(self, N):
-        result = []
-        for user in self.users.itervalues():
-            result.append((user, self.sampleFromPowerLawExponentialCutoff(user.getUserId())))
-        # Want smallest values
-        sortedResults = sorted(result, key=lambda x: x[1])
-        readers = []
-        for i in range(0, min(N, len(sortedResults))):
-            readers.append(sortedResults[i][0])
-        return readers
+        return heapq.nlargest(min(N, len(self.users)), self.users.itervalues(),
+                              key=lambda u: self.sampleFromPowerLawExponentialCutoff(u.getUserId()))
 
     def getUser(self, userId):
         return self.users[userId]

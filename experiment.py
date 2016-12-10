@@ -163,7 +163,9 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                evaluation.Statistics() #,
+                evaluation.Statistics(),
+                evaluation.ItemDegreeHeterogeneity(),
+                # evaluation.UserArticleGraphClustCoeff(),
                 #evaluation.UserUserGraphCutMinimization(),
             ]
 

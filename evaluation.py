@@ -1058,7 +1058,6 @@ class OverallClustering(Metric):
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
         """
-        print self.name
         ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
 
         def plotHelper(history, id):
@@ -1078,11 +1077,6 @@ class OverallClustering(Metric):
         Save history to a file.
         """
         util.writeCSV(experiment.out_path("OverallClustering" + self.name), history)
-
-# class OverallClusteringWRTFriends(OverallClustering):
-#     def measure(self, experiment, network, iterations):
-#         #printGraph(network.userArticleGraph)
-#         return snap.GetClustCf(network.userArticleFriendGraph, -1)    
 
 
 class DeadArticles(Metric):
@@ -1468,4 +1462,35 @@ class UserUserGraphCutMinimization(Metric):
         print 'Cluster B:', countsB
 
 
+class ItemDegreeHeterogeneity(Metric):
+    def measure(self, experiment, network, iterations):
+        sum_of_square_degrees = 0
+        sum_of_degrees = 0
+        for article in network.articles:
+            deg = network.userArticleGraph.GetNI(article).GetDeg()
+            sum_of_square_degrees += (deg * deg)
+            sum_of_degrees += deg
+        return sum_of_square_degrees / sum_of_degrees
 
+    def plot(self, experiment, network, history):
+        plt.figure()
+        plt.plot(history)
+        plt.xlabel('iterations')
+        plt.ylabel('item degree heterogeneity')
+        plt.title('Evolution of Item Degree Heterogeneity\n' + experiment.parameters, fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name))
+
+
+class UserArticleGraphClustCoeff(Metric):
+    def measure(self, experiment, network, iterations):
+       # Use at most N samples, where N is the number of users
+        N = len(network.users)
+        return snap.GetClustCf(network.userArticleGraph, N)
+
+    def plot(self, experiment, network, history):
+        plt.figure()
+        plt.plot(history)
+        plt.xlabel('iterations')
+        plt.ylabel('average clustering coefficient')
+        plt.title('Evolution of Clustering Coefficient\n' + experiment.parameters, fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name))
