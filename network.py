@@ -8,6 +8,8 @@ import evaluation
 import util
 from user import User
 import networkx as nx
+import numpy as np
+
 
 def getMax(NIdToDistH):
     nodeId = -1
@@ -365,23 +367,25 @@ class Network(object):
         Weights are defined by the number of common articles liked.
         The more that two people have read, the more common basis of
         understanding they have.
+
+        Returns (matrix, idx2user) where M is the computed dense matrix and
+        idx2user is a dict mapping the row/column indices in the matrix to
+        the corresponding User objects.
         """
-        weights = util.PairsDict()
+        # Materialize a list of the users
+        users = self.users.values()
+
+        # Compute mappings from index to user and vice versa
+        idx2user = dict(enumerate(users))
+        user2idx = {user.userId: i for i, user in idx2user.iteritems()}
+
+        # Accumulate edge weights
+        M = np.zeros((len(users), len(users)))
         for articleId in self.articles:
             for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
-                if (userA, userB) not in weights:
-                    weights[userA, userB] = 1
-                else:
-                    weights[userA, userB] += 1
-        i = []
-        j = []
-        weightsList = []
-        for (userA, userB), num_common in weights.iteritems():
-            i.append(userA)
-            j.append(userB)
-            weightsList.append(num_common)
-            i.append(userB)
-            j.append(userA)
-            weightsList.append(num_common)
+                i = user2idx[userA]
+                j = user2idx[userB]
+                M[i, j] += 1
+                M[j, i] += 1
 
-        return csc_matrix((weightsList, (i, j)))
+        return M, idx2user
