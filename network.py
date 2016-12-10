@@ -289,6 +289,10 @@ class Network(object):
     def getUser(self, userId):
         return self.users[userId]
 
+    def getLikers(self, articleId):
+        """Iterator over users that has liked the given article."""
+        return self.userArticleGraph.GetNI(articleId).GetOutEdges()
+
     def reapArticles(self, t):
         # Kill articles that are past their time
         for article in self.articles.values():
@@ -337,13 +341,13 @@ class Network(object):
         userUserGraph = snap.TUNGraph.New()
         for userId in self.users:
             userUserGraph.AddNode(userId)
-        for userA, userB in itertools.combinations(self.users, 2):
-            common_neighbors = snap.TIntV()
-            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
-            num_common = len(common_neighbors)
-            if num_common > 0:
-                weights[userA, userB] = num_common
-                userUserGraph.AddEdge(userA, userB)
+        for articleId in self.articles:
+            for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
+                if not userUserGraph.IsEdge(userA, userB):
+                    weights[userA, userB] = 1
+                    userUserGraph.AddEdge(userA, userB)
+                else:
+                    weights[userA, userB] += 1
         return userUserGraph, weights
 
     def getUserUserGraphMatrix(self):
@@ -355,6 +359,14 @@ class Network(object):
         weights = []
         i = []
         j = []
+        # for articleId in self.articles:
+        #     for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
+        #
+        #         if not userUserGraph.IsEdge(userA, userB):
+        #             weights[userA, userB] = 1
+        #             userUserGraph.AddEdge(userA, userB)
+        #         else:
+        #             weights[userA, userB] += 1
         for userA, userB in itertools.combinations(self.users, 2):
             common_neighbors = snap.TIntV()
             snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)

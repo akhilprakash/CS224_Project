@@ -114,6 +114,7 @@ class InstagramWithRandomDefault(Instagram):
         Instagram.__init__(self, default_recommender=Random())
 
 
+# FIXME: make this look less like Random??
 class CollaborativeFiltering(Recommender):
     """
     Item-item collaborative filtering.

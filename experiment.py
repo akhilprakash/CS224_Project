@@ -128,34 +128,9 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                #evaluation.Statistics(),
-                #evaluation.UserUserGraphCutMinimization(),
-                evaluation.WeightedGirvanNewman(),
-                evaluation.UserDegreeDistribution("all"),
-                evaluation.CommonArticles(-2, 2),
-                evaluation.CommonArticles(-1, 2),
-                evaluation.CommonArticles(-2, 1),
-                evaluation.CommonArticles(1,2),
-                evaluation.CommonArticles(2,2),
-                evaluation.CommonArticles(-2, -2),
-                evaluation.PathsBetweenPoliticalnesses(),
-                evaluation.PathsBetweenPoliticalnesses(-1, 1),
-                evaluation.PathsBetweenPoliticalnesses(-2, -1),
-                evaluation.PathsBetweenPoliticalnesses(1, 2),
-                evaluation.PathsBetweenPoliticalnesses(2, 2),
-                evaluation.PathsBetweenPoliticalnesses(-2, -2),
-                evaluation.OverallClustering(),
-                evaluation.ArticleDegreeDistribution("all"),
-                evaluation.ArticleDegreeDistribution("alive"),
-                evaluation.ArticleDegreeDistribution("dead"),
-                evaluation.ClusterPoliticalness("-2"),
-                evaluation.ClusterPoliticalness("-1"),
-                evaluation.ClusterPoliticalness("0"),
-                evaluation.ClusterPoliticalness("1"),
-                evaluation.ClusterPoliticalness("2"),
-                evaluation.ClusterPoliticalness("all"),
-                evaluation.CliquePercolation(),
-            ] #evaluation.GraphViz(),
+                evaluation.Statistics(),
+                evaluation.UserUserGraphCutMinimization(),
+            ]
         self.histories = defaultdict(list)
 
     def _parameters(self, delimiter):
