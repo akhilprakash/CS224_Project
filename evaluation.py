@@ -93,33 +93,60 @@ class Statistics(Metric):
     """
 
     def measure(self, experiment, network, iterations):
-        pass
+        # Calculate average and sum over variances across articles that were read by more than 2 (5?) readers
+        userIDs = network.users.keys()
+        articleIDs = network.articles.keys()
+        timesLiked = {articleID: 0 for articleID in articleIDs} # Number of times each article was liked
+        POs_of_readers = {articleID: [] for articleID in articleIDs} #articleID: [PO of each user that read]
+
+        for userID in userIDs:
+            userPO = network.getUser(userID).politicalness
+            for article in network.articlesLikedByUser(userID):
+                timesLiked[article.articleId] += 1
+                POs_of_readers[article.articleId].append(userPO)
+
+
+        reader_PO_std = {articleID: 0 for articleID in articleIDs}
+        for articleID in reader_PO_std.keys():
+            reader_PO_std[articleID] = np.std(POs_of_readers[articleID])
+
+        # Calculate the average and sum over variances of articles that were liked by over two readers
+        timesLiked_overTwo = {k: v for (k, v) in timesLiked.items() if v > 2}
+        std_overTwo = {k: reader_PO_std[k] for k in timesLiked_overTwo.keys()}
+
+        avg_std = np.mean(std_overTwo.values())
+        # sum_var = np.sum(vars_overTwo.values())
+        print 'AVG STD IN POs'
+        print avg_std
 
         '''
-        userArticleGraph = network.userArticleGraph
-        numUsersWithPoliticalness = collections.defaultdict(int)
-        distribution = {}
-        for user in network.users.itervalues():
-            nodeUserId = user.getUserId()
-            userPoliticalness = user.getPoliticalness()
-            for article in userArticleGraph.GetNI(nodeUserId).GetOutEdges():
-                articlePoliticalness = network.getArticle(article).getPoliticalness()
-                numUsersWithPoliticalness[userPoliticalness] = numUsersWithPoliticalness[userPoliticalness] + 1
-                if userPoliticalness in distribution:
-                    innerDict = distribution[userPoliticalness]
-                    if articlePoliticalness in innerDict:
-                        innerDict[articlePoliticalness] = innerDict[articlePoliticalness] + 1
-                    else:
-                        innerDict[articlePoliticalness] = 1
-                else:
-                    distribution[userPoliticalness] = {articlePoliticalness: 1}
-        return [distribution, numUsersWithPoliticalness]
+        IDs, stds = zip(*sorted(zip(reader_PO_std.keys(), reader_PO_std.values()), key=lambda x: x[1]))
+        numLikes = []
+        # Build list of number of likes ordered by same ordering as var
+        for i in range(0, len(IDs)):
+            numLikes.append(timesLiked[IDs[i]])
+
+        # Plot variance of POs of those who have liked each article, ordered by var
+
+        fig, ax1 = plt.subplots()
+
+        ax2 = ax1.twinx()
+        ax1.plot(range(0, len(stds)), numLikes, 'kx')
+        ax2.plot(range(0, len(stds)), stds, 'rx')
+
+        ax1.set_xlabel('Ordered ArticleID')
+        ax1.set_ylabel('Number of Users Who Liked Article', color='k')
+        ax2.set_ylabel('Standard Deviation in Pol. Orient. of Users Who Liked Article', color='r')
+        plt.title("Itr_" + str(iterations) + " Std. Dev. in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters), fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name + " Itr_" + str(iterations) + "LikerStd" + ".png"))
+        plt.close()
         '''
+        return avg_std
+
 
 
     def plot(self, experiment, network, history):
         # Number of articles read by each user
-
         userIDs = network.users.keys()
         articleIDs = network.articles.keys()
         numLiked = {userID: 0 for userID in userIDs} # Number of articles each user liked
@@ -151,6 +178,7 @@ class Statistics(Metric):
                 likedFromSource[article.getSource()] += 1
                 POs_of_readers[article.articleId].append(userPO)
 
+
         print "userID: number of articles liked"
         # print numLiked
 
@@ -162,8 +190,6 @@ class Statistics(Metric):
 
         print "source: number of times an article was liked from this source"
         print likedFromSource
-
-
 
         print self.name
         plt.figure()
@@ -224,22 +250,39 @@ class Statistics(Metric):
 
         # Variance of POs of users that liked each article, ordered by variance of article
         # dict of variances
-        reader_PO_variance = {articleID: 0 for articleID in articleIDs}
-        for articleID in reader_PO_variance.keys():
-            reader_PO_variance[articleID] = np.var(POs_of_readers[articleID])
+        reader_PO_std = {articleID: 0 for articleID in articleIDs}
+        for articleID in reader_PO_std.keys():
+            reader_PO_std[articleID] = np.std(POs_of_readers[articleID])
 
-        IDs, vars = zip(*sorted(zip(reader_PO_variance.keys(), reader_PO_variance.values()), key = lambda x: x[1]))
 
+        # Calculate the average and sum over variances of articles that were liked by over two readers
+        timesLiked_overTwo = {k:v for (k,v) in timesLiked.items() if v > 2}
+        std_overTwo = {k: reader_PO_std[k] for k in timesLiked_overTwo.keys()}
+
+        # average over variances where greater than 2 samples
+        avg_std = np.mean(std_overTwo.values())
+        sum_var = np.sum(std_overTwo.values())
+        print 'AVG STD IN POs'
+        print avg_std
+
+
+        print 'SUM VAR IN POs'
+        print sum_var
+
+
+
+
+        IDs, stds = zip(*sorted(zip(reader_PO_std.keys(), reader_PO_std.values()), key = lambda x: x[1]))
         numLikes = []
         # Build list of number of likes ordered by same ordering as var
         for i in range(0, len(IDs)):
             numLikes.append(timesLiked[IDs[i]])
 
-        print reader_PO_variance
-        print "IDs"
-        print IDs
-        print "vars"
-        print vars
+        # print reader_PO_variance
+        # print "IDs"
+        # print IDs
+        # print "vars"
+        # print vars
 
         # Plot variance of POs of those who have liked each article, ordered by var
         '''
@@ -256,18 +299,28 @@ class Statistics(Metric):
         plt.close()
         '''
 
-
         fig, ax1 = plt.subplots()
 
         ax2 = ax1.twinx()
-        ax1.plot(range(0, len(vars)), numLikes, 'kx')
-        ax2.plot(range(0, len(vars)), vars, 'r-')
+        ax1.plot(range(0, len(stds)), numLikes, 'kx')
+        ax2.plot(range(0, len(stds)), stds, 'r-')
 
         ax1.set_xlabel('Ordered ArticleID')
         ax1.set_ylabel('Number of Users Who Liked Article', color='k')
-        ax2.set_ylabel('Variance in Pol. Orient. of Users Who Liked Article', color='r')
-        plt.title("Variance in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters), fontsize=7)
-        plt.savefig(experiment.out_path(self.safe_name + " LikerVar" + ".png"))
+        ax2.set_ylabel('Standard Deviation in Pol. Orient. of Users Who Liked Article', color='r')
+        plt.title("Std. Dev. in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters), fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name + " LikerStd" + ".png"))
+        plt.close()
+
+
+
+        # PLOT STD DEVS OVER TIME
+        plt.figure()
+        plt.plot(range(0, len(history)), history)
+        plt.xlabel("Iteration")
+        plt.ylabel("Average Std. Dev.")
+        plt.title("Average Standard Deviation in Article Likers Over Time \n " + str(experiment.parameters), fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name + " Std_OverTime" + ".png"))
         plt.close()
 
             # Number of times pair of users read same article
@@ -279,11 +332,10 @@ class Statistics(Metric):
         # Variance in the readership; how much does distribution of pol.orient of users vary across each article
         # Variance in who read each article
 
-
-
     def save(self, experiment, history):
         pass
         util.writeCSV(experiment.out_path("statistics"), history)
+
 
 class CliquePercolation(Metric):
 

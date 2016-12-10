@@ -128,8 +128,8 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                evaluation.Statistics(),
-                evaluation.UserUserGraphCutMinimization(),
+                evaluation.Statistics() #,
+                #evaluation.UserUserGraphCutMinimization(),
             ]
         self.histories = defaultdict(list)
 
