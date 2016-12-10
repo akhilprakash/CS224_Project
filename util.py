@@ -150,6 +150,12 @@ class PairsDict(dict):
         d[a, b] = "hello"
         assert d[a, b] == d[b, a]
     """
+    def __contains__(self, key):
+        u, v = key
+        if u < v:
+            return dict.__contains__(self, key)
+        else:
+            return dict.__contains__(self, (v, u))
 
     def __setitem__(self, key, value):
         u, v = key

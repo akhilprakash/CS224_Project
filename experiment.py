@@ -68,7 +68,7 @@ class Experiment(object):
                  pLikeMethod='empirical',
                  friendGraphFile='CA-GrQc.txt',
                  numOnlinePerIteration=100,
-                 numRecsPerIteration=1,
+                 numRecsPerIteration=5,
                  ):
         """
         Constructor for Experiment.
