@@ -90,7 +90,7 @@ class Instagram(Recommender):
                 article
                 for friend in network.friendGraph.GetNI(reader.userId).GetOutEdges()
                 for article in network.articlesLikedByUser(friend)
-                if not network.userArticleGraph.IsEdge(article.articleId, friend)
+                if not network.userArticleGraph.IsEdge(article.articleId, reader.userId)
                 and not article.isDead
             ]
             # If there aren't enough candidates use default recommender

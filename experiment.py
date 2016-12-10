@@ -127,8 +127,8 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                evaluation.OverallClustering(),
-                evaluation.CliquePercolation(),
+                # evaluation.OverallClustering(),
+                # evaluation.CliquePercolation(),
                 evaluation.Statistics()
             ] #evaluation.GraphViz(),
         self.histories = defaultdict(list)
