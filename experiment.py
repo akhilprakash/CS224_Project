@@ -124,13 +124,13 @@ class Experiment(object):
                 evaluation.CommonArticles(2,2),
                 evaluation.CommonArticles(-2, -2),
                 evaluation.Betweenness(),
-                #evaluation.WeightedGirvanNewman(),
             ]
         else:
             self.metrics = [
                 evaluation.Statistics() #,
                 #evaluation.UserUserGraphCutMinimization(),
             ]
+
         self.histories = defaultdict(list)
 
     def _parameters(self, delimiter):

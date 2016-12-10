@@ -24,7 +24,8 @@ class Network(object):
     X_MIN = 1
 
     # TODO: is this based on data?
-    POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .3, .2, .3, .1]
+    #http://www.gallup.com/poll/188096/democratic-republican-identification-near-historical-lows.aspx
+    POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .2, .4, .2, .1]
 
     def largestNodeId(self, graph):
         maxNodeId = -1
@@ -165,9 +166,10 @@ class Network(object):
                     weight = 0
                 else:
                     weight = float(len(Nbrs)) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                    G.add_edge(uId1, uId2, weight = weight)
-                    edgeToWeightDict[(uId1, uId2)] = weight
-                    userUserGraph.AddEdge(uId1, uId2)
+                    if weight > .15:
+                        G.add_edge(uId1, uId2, weight = weight)
+                        edgeToWeightDict[(uId1, uId2)] = weight
+                        userUserGraph.AddEdge(uId1, uId2)
         
         return (G, userUserGraph, edgeToWeightDict)
 
@@ -356,27 +358,22 @@ class Network(object):
         The more that two people have read, the more common basis of
         understanding they have.
         """
-        weights = []
+        weights = util.PairsDict()
+        for articleId in self.articles:
+            for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
+                if (userA, userB) not in weights:
+                    weights[userA, userB] = 1
+                else:
+                    weights[userA, userB] += 1
         i = []
         j = []
-        # for articleId in self.articles:
-        #     for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
-        #
-        #         if not userUserGraph.IsEdge(userA, userB):
-        #             weights[userA, userB] = 1
-        #             userUserGraph.AddEdge(userA, userB)
-        #         else:
-        #             weights[userA, userB] += 1
-        for userA, userB in itertools.combinations(self.users, 2):
-            common_neighbors = snap.TIntV()
-            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
-            num_common = len(common_neighbors)
-            if num_common > 0:
-                i.append(userA)
-                j.append(userB)
-                weights.append(num_common)
-                i.append(userB)
-                j.append(userA)
-                weights.append(num_common)
+        weightsList = []
+        for (userA, userB), num_common in weights.iteritems():
+            i.append(userA)
+            j.append(userB)
+            weightsList.append(num_common)
+            i.append(userB)
+            j.append(userA)
+            weightsList.append(num_common)
 
-        return csc_matrix((weights, (i, j)))
+        return csc_matrix((weightsList, (i, j)))
