@@ -319,7 +319,8 @@ class Statistics(Metric):
         plt.plot(range(0, len(history)), history)
         plt.xlabel("Iteration")
         plt.ylabel("Average Std. Dev.")
-        plt.title("Average Standard Deviation in Article Likers Over Time \n " + str(experiment.parameters), fontsize=7)
+        plt.title("Average Standard Deviation in Pol. Orient. of those Who Like Article Over Time \n " + str(experiment.parameters), fontsize=7)
+        plt.ylim((0.70, 1.05))
         plt.savefig(experiment.out_path(self.safe_name + " Std_OverTime" + ".png"))
         plt.close()
 

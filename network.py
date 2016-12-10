@@ -26,6 +26,7 @@ class Network(object):
     # TODO: is this based on data?
     #http://www.gallup.com/poll/188096/democratic-republican-identification-near-historical-lows.aspx
     POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .2, .4, .2, .1]
+    # POLITICALNESS_DISTRIBUTION_FOR_USERS = [.2, .3, .4, .3, .2]
 
     def largestNodeId(self, graph):
         maxNodeId = -1

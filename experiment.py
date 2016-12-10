@@ -32,7 +32,7 @@ class PLike(object):
         return PLike.TRUST[article.source][reader.politicalness]
 
     @staticmethod
-    def individual(reader, article):
+    def smoothed(reader, article):
         # Like probability is equal to a combination of the trust percentages from the data for that source
         # a*plikeofreader with diff politcalness
         PLike_for_source = PLike.TRUST[article.source]
@@ -52,6 +52,39 @@ class PLike(object):
 
         return (np.array(PLike_for_source.values()).dot(weighting))/np.sum(weighting)#PLike.TRUST[article.source][reader.politicalness]
 
+
+    @staticmethod
+    def individual(reader, article):
+        # Add variance back into means by getting the specific reader and article and sampling from a kernel with some
+        # variance as a function of the reader type around that probability
+        plike_data = PLike.TRUST[article.source][reader.politicalness]
+
+        # print str(1.0 - (0.5*(np.absolute(reader.politicalness)) + 0.01))
+        plike_indiv  = np.random.normal(plike_data, 1.0 - (0.5*(np.absolute(reader.politicalness))) + 0.01)
+
+        '''
+        print 'data'
+        print plike_data
+
+        print 'indiv'
+        print plike_indiv
+        '''
+
+        if plike_indiv > 1:
+            return 1
+        elif plike_indiv < 0:
+            return 0
+        else:
+            return plike_indiv
+
+
+        '''
+        print weighting
+        print 'actual'
+        print PLike_for_source[reader.politicalness]
+        print 'indiv'
+        print (np.array(PLike_for_source.values()).dot(weighting))/np.sum(weighting)
+        '''
 
 
 class Experiment(object):
