@@ -11,7 +11,7 @@ import math
 
 import numpy as np
 
-from util import PairsDict
+from util import PairsDefaultDict
 import util
 
 
@@ -141,6 +141,12 @@ class CollaborativeFiltering(Recommender):
     }
 
     SOURCE_SIM_WEIGHT = 1.0
+    MAX_SAMPLES = 100000
+
+    def __init__(self):
+        # Maintain similarities between all unique pairs of articles O(n^2)
+        # Default similarity is zero
+        self.sim = PairsDefaultDict(int)
 
     def source_similarity(self, sourceA, sourceB):
         # Cosine similarity of the source trust distributions
@@ -150,39 +156,37 @@ class CollaborativeFiltering(Recommender):
         return vecA.dot(vecB) / math.sqrt(vecA.dot(vecA) * vecB.dot(vecB))
 
     def makeRecommendations(self, network, readers, N=1):
-        # Compute similarities between all unique pairs of articles O(n^2)
-        sim = PairsDict()
+        # TODO: is this making good recommendations? does it have enough info to make good recommendations?
+        # TODO: print sorted scores of candidates as a debugging measure
         # num_undefined = 0
         # num_zero_intersection = 0
         # nice = []
-        for articleA, articleB in itertools.combinations(network.getArticles(), 2):
-            a = articleA.articleId
-            b = articleB.articleId
+        N = len(network.articles)
+        num_combinations = N * N - 1
+        num_to_sample = min(num_combinations, self.MAX_SAMPLES)
+        num_sampled = 0
+        while num_sampled < num_to_sample:
+            # Random sample of two article IDs
+            a, b = random.sample(network.articles, 2)
+
+            # Get the set of users who like each other article
             ratersA = set(network.userArticleGraph.GetNI(a).GetOutEdges())
             ratersB = set(network.userArticleGraph.GetNI(b).GetOutEdges())
 
-            # NEW METHOD
+            # If there are no likes on either article, the similarity stays zero
+            if not ratersA or not ratersB:
+                continue
+
             # Modified Jaccard similarity, |A ^ B| / min(|A|, |B|)
-            # This makes sure that the similarity between articles with vastly different
-            # number of likes will be normalized with respect to the smaller of the
-            # two liker sets.
+            # The min modification makes sure that the similarity between
+            # articles with vastly different number of likes will be normalized
+            # with respect to the smaller of the two liker sets.
             top = len(ratersA & ratersB)
             bot = min(len(ratersA), len(ratersB))
-            sim[a, b] = top / bot if bot > 0 else 0
+            self.sim[a, b] = top / bot
 
-            # OLD METHOD
-            # Use Jaccard similarity with correction
-            # The correction makes the similarity approach the source similarity
-            # as the unions of the ratings approaches zero.
-            # sim[a, b] = (top + source_similarity * self.SOURCE_SIM_WEIGHT) / (bot + self.SOURCE_SIM_WEIGHT)
-
-            # if bot == 0:
-            #     num_undefined += 1
-            # if bot > 0:
-            #     if top == 0:
-            #         num_zero_intersection += 1
-            #     else:
-            #         nice.append(top / bot)
+            # increment sample count
+            num_sampled += 1
 
         # nice.sort()
         # median = nice[len(nice) // 2]
@@ -200,11 +204,11 @@ class CollaborativeFiltering(Recommender):
                 # Then we should choose the articles with the highest score.
                 likedArticles = list(network.articlesLikedByUser(reader.userId))
                 def score(candidate):
-                    return sum(sim[candidate.articleId, liked.articleId] for liked in likedArticles)
+                    return sum(self.sim[candidate.articleId, liked.articleId] for liked in likedArticles)
                 recs[reader.userId] = heapq.nlargest(N, candidateArticles, score)
             else:
                 # Default to content-based.
-                recs[reader.userId] = ContentBased().makeRecommendations(network, readers, N)
+                recs[reader.userId] = ContentBased().makeRecommendations(network, [reader], N)[reader.userId]
 
         return recs
 

@@ -7,6 +7,7 @@ import math
 import random
 import sys
 import time
+from collections import defaultdict
 
 import numpy as np
 
@@ -133,6 +134,37 @@ def ensure_path_exists(path):
 
 def data_path(filename):
     return os.path.join(DATA_BASE_DIRECTORY, filename)
+
+
+class PairsDefaultDict(defaultdict):
+    """
+    dict with keys that are 2-tuples (pairs), such that set and get are invariant
+    to the order of the pairs. Aka,
+
+        d = PairsDict()
+        d[a, b] = "hello"
+        assert d[a, b] == d[b, a]
+    """
+    def __contains__(self, key):
+        u, v = key
+        if u < v:
+            return dict.__contains__(self, key)
+        else:
+            return dict.__contains__(self, (v, u))
+
+    def __setitem__(self, key, value):
+        u, v = key
+        if u < v:
+            return dict.__setitem__(self, key, value)
+        else:
+            return dict.__setitem__(self, (v, u), value)
+
+    def __getitem__(self, key):
+        u, v = key
+        if u < v:
+            return dict.__getitem__(self, key)
+        else:
+            return dict.__getitem__(self, (v, u))
 
 
 class PairsDict(dict):
