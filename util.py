@@ -119,22 +119,16 @@ def print_error(s):
 
 
 DATA_BASE_DIRECTORY = 'data'
-OUTPUT_BASE_DIRECTORY = 'out'
 
 
-def out_path(filename, subdir=None):
+def ensure_path_exists(path):
     """
-    Returns a path for a new output file in the format:
-        out/[subdir/]filename
-    Creates out/[subdir/] if it doesn't exist yet.
+    Creates path if it doesn't exist yet.
     """
-    output_dir = OUTPUT_BASE_DIRECTORY
-    if subdir is not None:
-        output_dir = os.path.join(output_dir, subdir)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print_error('Created directory ' + output_dir)
-    return os.path.join(output_dir, filename)
+    if not os.path.exists(path):
+        os.makedirs(path)
+        print_error('Created directory ' + path)
+    return path
 
 
 def data_path(filename):

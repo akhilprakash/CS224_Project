@@ -4,7 +4,7 @@ import random
 from sets import Set
 import snap
 from scipy.sparse import csc_matrix
-
+import evaluation
 import util
 from user import User
 import networkx as nx
@@ -57,22 +57,30 @@ class Network(object):
         else:
             raise Exception("initMethod must be propagation, random, or friends")
         print "done initializing"
+        evaluation.getEigenVectorEigenValue(self, self.friendGraph, 0)
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
         retVal = []
+        didEnter = False
         for newNode in self.friendGraph.GetNI(nodeId).GetOutEdges():
             #either pass on political, political - 1, oor poltial + 1
-            weights = [.3 + depth, .5 + depth, .3 + depth]
-            idx = util.weighted_choice(weights)
             if political == 2 or political == -2:
-                weights = [.5 + depth, .5 + depth]
+                weights = [.5 + depth, .7 + depth]
                 idx = util.weighted_choice(weights)
                 if idx == 0:
                     self.users[newNode].setPoliticalness(political)
                 else:
                     self.users[newNode].setPoliticalness(political - political / 2)
-            else:
+                didEnter = True
+            elif political == 0:
+                weights = [.4 + depth, .5 + depth, .4 + depth]
+            elif political == 1:
+                weights = [.4 + depth, .5 + depth, .1 + depth]
+            elif political == -1:
+                weights = [.1 + depth, .5 + depth, .4 + depth]
+            if not didEnter:
+                idx = util.weighted_choice(weights)
                 if idx == 0:
                     self.users[newNode].setPoliticalness(political-1)
                 elif idx == 1:

@@ -75,7 +75,6 @@ class ContentBased(Recommender):
         return recs
 
 
-# FIXME
 class Instagram(Recommender):
     """
     Uniformly shows reader all the articles that their friends liked.

@@ -1280,21 +1280,23 @@ def getEigenVectorEigenValue(network, graph, iterations):
     for uId, user in network.users.items():
         matrixId = uIdOrAIdToMatrix[uId] 
         matrixIdPoliticalness.append([matrixId, user.getPoliticalness()])
-    for aId, article in network.articles.items():
-        matrixId = uIdOrAIdToMatrix[aId]
-        matrixIdPoliticalness.append([matrixId, article.getPoliticalness()])
-    util.writeCSV(experiment.out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPoliticalness)
+    # for aId, article in network.articles.items():
+    #     matrixId = uIdOrAIdToMatrix[aId]
+    #     matrixIdPoliticalness.append([matrixId, article.getPoliticalness()])
+    util.writeCSV(util.out_path("matrixId_topolitcaless iterations=" + str(iterations)), matrixIdPoliticalness)
+    util.writeCSV(util.out_path("adjacency matrix iterations=" + str(iterations)), matrix)
     #print matrix
     #print len(matrix)
     #print len(matrix[0])
-    laplacian = scipy.sparse.csgraph.laplacian(np.array(matrix))
-    eigenvalue, eigenvector = np.linalg.eig(laplacian)
+    #laplacian = scipy.sparse.csgraph.laplacian(np.array(matrix))
+    #eigenvalue, eigenvector = np.linalg.eig(laplacian)
     #print eigenvalue
     #print eigenvector
     #result = [x for (y,x) in sorted(zip(eigenvalue,eigenvector))]
-    eigenvalueIdx = eigenvalue.argsort()
-    result = eigenvector[:, eigenvalueIdx]
-    return (result, uIdOrAIdToMatrix, matrix)
+    #eigenvalueIdx = eigenvalue.argsort()
+    #result = eigenvector[:, eigenvalueIdx]
+    #return (result, uIdOrAIdToMatrix, matrix)
+    return ([], {}, [[]])
 
 # class EigenVectorsWRTFriends(EigenVectors):
 

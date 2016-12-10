@@ -11,7 +11,7 @@ import recommendation
 import util
 from article import Article
 from network import Network
-from util import data_path, out_path, print_error, with_prob
+from util import data_path, ensure_path_exists, print_error, with_prob
 
 
 class PLike(object):
@@ -102,6 +102,7 @@ class Experiment(object):
                  friendGraphFile='CA-GrQc.txt',
                  numOnlinePerIteration=100,
                  numRecsPerIteration=5,
+                 outputDir=os.path.join('out', '{params}'),
                  ):
         """
         Constructor for Experiment.
@@ -121,6 +122,7 @@ class Experiment(object):
         self.network = Network(data_path(friendGraphFile), networkInitType)
         self.pLikeMethod = pLikeMethod
         self.pLike = getattr(PLike, pLikeMethod)
+        self.outputDir = outputDir
         self.recommender = getattr(recommendation, recommender)()
         self.nullRecommender = getattr(recommendation, nullRecommender)()
         if self.allAnalyses:
@@ -182,8 +184,10 @@ class Experiment(object):
         return self._parameters(delimiter=', ')
 
     def out_path(self, filename):
-        subdir = self._parameters(delimiter='.').replace(' ', '')
-        return out_path(filename, subdir=subdir)
+        paramsKey = self._parameters(delimiter='.').replace(' ', '')
+        outputDir = self.outputDir.replace('{params}', paramsKey)
+        ensure_path_exists(outputDir)
+        return os.path.join(outputDir, filename)
 
     def introduceArticle(self, iterations):
         # Create an article from a random source
