@@ -99,7 +99,7 @@ class Experiment(object):
                  nullRecommender='Random',
                  networkInitType='random',
                  pLikeMethod='empirical',
-                 friendGraphFile='CA-GrQc.txt',
+                 friendGraphFile= 'zacharys.csv', #'CA-GrQc.txt',
                  numOnlinePerIteration=100,
                  numRecsPerIteration=5,
                  outputDir=os.path.join('out', '{params}'),
@@ -162,7 +162,7 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                evaluation.Statistics() #,
+                evaluation.Statistics(), evaluation.HierClustering() #,
                 #evaluation.UserUserGraphCutMinimization(),
             ]
 

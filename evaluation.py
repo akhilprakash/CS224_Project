@@ -19,6 +19,8 @@ import snap
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import laplacian
+from scipy.spatial.distance import squareform
+import scipy.cluster.hierarchy
 import pdb
 import util
 from util import print_error
@@ -334,8 +336,41 @@ class Statistics(Metric):
         # Variance in who read each article
 
     def save(self, experiment, history):
-        pass
         util.writeCSV(experiment.out_path("statistics"), history)
+
+
+class HierClustering(Metric):
+    def measure(self, experiment, network, iterations):
+        pass
+
+    def plot(self, experiment, network, history):
+        adj_matrix = network.getUserUserGraphMatrix()
+        # print adj_matrix
+        # convert to dense distance matrix
+        dense_matrix = adj_matrix.toarray()
+
+        # convert to condensend dist matrix (squareform)
+        cond_dist = squareform(dense_matrix)
+        # run hier clust
+        linkage_matrix = scipy.cluster.hierarchy.linkage(cond_dist, method='average')
+
+        # plot dendrogram
+
+        plt.figure()
+        plt.title("Hierarchical Clustering Dendrogram \n " + str(experiment.parameters))
+        plt.xlabel('sample index')
+        plt.ylabel('distance')
+        scipy.cluster.hierarchy.dendrogram(
+            linkage_matrix,
+            leaf_rotation=90.,  # rotates the x axis labels
+            leaf_font_size=8.,  # font size for the x axis labels
+        )
+        plt.savefig(experiment.out_path(self.safe_name)+ " Dendrogram" + ".png")
+        plt.close()
+
+
+    def save(self, experiment, history):
+        pass
 
 
 class CliquePercolation(Metric):
@@ -1272,6 +1307,7 @@ class EigenVectors(Metric):
         ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
         for i, id in enumerate(ids):
             plotHelper(map(lambda x: x[i], history), id)
+
 
 def getEigenVectorEigenValue(network, graph, iterations):
     matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)

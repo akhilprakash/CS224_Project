@@ -57,7 +57,7 @@ class Network(object):
         else:
             raise Exception("initMethod must be propagation, random, or friends")
         print "done initializing"
-        evaluation.getEigenVectorEigenValue(self, self.friendGraph, 0)
+        # evaluation.getEigenVectorEigenValue(self, self.friendGraph, 0)
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
