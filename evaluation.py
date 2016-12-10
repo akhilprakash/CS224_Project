@@ -170,7 +170,8 @@ class Statistics(Metric):
         plt.plot(range(0, len(numLiked.keys())), sorted(numLiked.values()))
         plt.xlabel("Ordered Users")
         plt.ylabel("Number of Articles Liked")
-        plt.title("Number of Articles Liked By Each User \n " + str(experiment.parameters))
+        #exp_str = " \n".join(str(experiment.parameters).split(','))
+        plt.title("Number of Articles Liked By Each User \n " + str(experiment.parameters), fontsize = 7)
         plt.savefig(experiment.out_path(self.safe_name + " NumArticlesLiked" + ".png"))
         plt.close()
 
@@ -191,7 +192,7 @@ class Statistics(Metric):
         plt.plot(range(0, len(timesLiked.keys())), sorted(timesLiked.values()))
         plt.xlabel("Ordered Articles")
         plt.ylabel("Number of Times Article Liked")
-        plt.title("Number of Users that Like Each Article \n " + str(experiment.parameters))
+        plt.title("Number of Users that Like Each Article \n " + str(experiment.parameters), fontsize=7)
         plt.savefig(experiment.out_path(self.safe_name + " TimesArticlesLiked" + ".png"))
         plt.close()
 
@@ -203,7 +204,7 @@ class Statistics(Metric):
         plt.legend(["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"])
         plt.xlabel("Article")
         plt.ylabel("Number of Times Article Liked")
-        plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters))
+        plt.title("Number of Users of Each Type that Like Each Article \n " + str(experiment.parameters), fontsize=7)
         plt.savefig(experiment.out_path(self.safe_name + " NumTypesThatReadArticle" + ".png"))
         plt.close()
 
@@ -215,7 +216,7 @@ class Statistics(Metric):
         #    ["consistently liberal", "mostly liberal", "mixed", "mostly conservative", "consistently conservative"])
         plt.xlabel("Type")
         plt.ylabel("Number of Users of Type")
-        plt.title("Number of Users of Each Type \n " + str(experiment.parameters))
+        plt.title("Number of Users of Each Type \n " + str(experiment.parameters), fontsize=7)
         plt.savefig(experiment.out_path(self.safe_name + " NumTypes" + ".png"))
         plt.close()
 
@@ -265,7 +266,7 @@ class Statistics(Metric):
         ax1.set_xlabel('Ordered ArticleID')
         ax1.set_ylabel('Number of Users Who Liked Article', color='k')
         ax2.set_ylabel('Variance in Pol. Orient. of Users Who Liked Article', color='r')
-        plt.title("Variance in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters))
+        plt.title("Variance in Pol. Orientations of Likers of Each Article \n " + str(experiment.parameters), fontsize=7)
         plt.savefig(experiment.out_path(self.safe_name + " LikerVar" + ".png"))
         plt.close()
 
