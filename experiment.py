@@ -68,7 +68,7 @@ class Experiment(object):
                  pLikeMethod='empirical',
                  friendGraphFile='CA-GrQc.txt',
                  numOnlinePerIteration=100,
-                 numRecsPerIteration=1,
+                 numRecsPerIteration=5,
                  ):
         """
         Constructor for Experiment.
@@ -124,10 +124,13 @@ class Experiment(object):
                 evaluation.CommonArticles(2,2),
                 evaluation.CommonArticles(-2, -2),
                 evaluation.Betweenness(),
-                evaluation.WeightedGirvanNewman(),
+                #evaluation.WeightedGirvanNewman(),
             ]
         else:
-            self.metrics = [evaluation.Statistics()] #, evaluation.UserUserGraphCutMinimization()] #evaluation.GraphViz(),
+            self.metrics = [
+                evaluation.Statistics(),
+                evaluation.UserUserGraphCutMinimization(),
+            ]
         self.histories = defaultdict(list)
 
     def _parameters(self, delimiter):

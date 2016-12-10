@@ -16,7 +16,7 @@ def getMax(NIdToDistH):
         if NIdToDistH[item] > longestPath:
             longestPath = NIdToDistH[item]
             nodeId = item
-    return (item, longestPath)
+    return (nodeId, longestPath)
 
 
 class Network(object):
@@ -35,11 +35,17 @@ class Network(object):
     def __init__(self, friendGraphFile, initMethod):
         self.users = {}
         self.articles = {}
-        self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        if friendGraphFile[-3:] == "csv":
+            self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")    
+        else:
+            self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
         print self.friendGraph.GetNodes()
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
-        self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
+        if friendGraphFile[-3:] == "csv":
+            self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")
+        else:
+            self.userArticleFriendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
         if initMethod == "propagation":
             self.initializeUsersBasedOn2Neg2()
         elif initMethod == "random":
@@ -100,7 +106,7 @@ class Network(object):
             destId = -1
             longestPath = -1
             for source in nodesInComponent:
-                if counter > 500:
+                if counter > 600:
                     print "broke"
                     print longestPath
                     break
@@ -156,12 +162,12 @@ class Network(object):
                 Nbrs = snap.TIntV()
                 snap.GetCmnNbrs(self.userArticleGraph, uId1, uId2, Nbrs)
                 if self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg() == 0:
-                    weight = 1
+                    weight = 0
                 else:
-                    weight = len(Nbrs) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                G.add_edge(uId1, uId2, weight = weight)
-                edgeToWeightDict[(uId1, uId2)] = weight
-                userUserGraph.AddEdge(uId1, uId2)
+                    weight = float(len(Nbrs)) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
+                    G.add_edge(uId1, uId2, weight = weight)
+                    edgeToWeightDict[(uId1, uId2)] = weight
+                    userUserGraph.AddEdge(uId1, uId2)
         
         return (G, userUserGraph, edgeToWeightDict)
 
@@ -254,6 +260,7 @@ class Network(object):
         beta = self.getBeta(userNodeId)
         return beta
 
+    # TODO: verify that this works and is efficient enough?
     def sampleFromPowerLawExponentialCutoff(self, userNodeId):
         # Rejection sampling
         # g is uniform 0,1
@@ -275,12 +282,16 @@ class Network(object):
         # Want smallest values
         sortedResults = sorted(result, key=lambda x: x[1])
         readers = []
-        for i in range(0, N):
+        for i in range(0, min(N, len(sortedResults))):
             readers.append(sortedResults[i][0])
         return readers
 
     def getUser(self, userId):
         return self.users[userId]
+
+    def getLikers(self, articleId):
+        """Iterator over users that has liked the given article."""
+        return self.userArticleGraph.GetNI(articleId).GetOutEdges()
 
     def reapArticles(self, t):
         # Kill articles that are past their time
@@ -330,13 +341,13 @@ class Network(object):
         userUserGraph = snap.TUNGraph.New()
         for userId in self.users:
             userUserGraph.AddNode(userId)
-        for userA, userB in itertools.combinations(self.users, 2):
-            common_neighbors = snap.TIntV()
-            snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
-            num_common = len(common_neighbors)
-            if num_common > 0:
-                weights[userA, userB] = num_common
-                userUserGraph.AddEdge(userA, userB)
+        for articleId in self.articles:
+            for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
+                if not userUserGraph.IsEdge(userA, userB):
+                    weights[userA, userB] = 1
+                    userUserGraph.AddEdge(userA, userB)
+                else:
+                    weights[userA, userB] += 1
         return userUserGraph, weights
 
     def getUserUserGraphMatrix(self):
@@ -348,6 +359,14 @@ class Network(object):
         weights = []
         i = []
         j = []
+        # for articleId in self.articles:
+        #     for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
+        #
+        #         if not userUserGraph.IsEdge(userA, userB):
+        #             weights[userA, userB] = 1
+        #             userUserGraph.AddEdge(userA, userB)
+        #         else:
+        #             weights[userA, userB] += 1
         for userA, userB in itertools.combinations(self.users, 2):
             common_neighbors = snap.TIntV()
             snap.GetCmnNbrs(self.userArticleGraph, userA, userB, common_neighbors)
