@@ -129,6 +129,7 @@ class Experiment(object):
             self.metrics = [
                 evaluation.OverallClustering(),
                 evaluation.CliquePercolation(),
+                evaluation.Statistics()
             ] #evaluation.GraphViz(),
         self.histories = defaultdict(list)
 
