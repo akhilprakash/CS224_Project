@@ -8,6 +8,7 @@ import heapq
 import itertools
 import random
 import math
+import warnings
 
 import numpy as np
 
@@ -29,15 +30,25 @@ class Recommender(object):
         raise NotImplementedError
 
 
+def clamp(N, limit):
+    if N > limit:
+        warnings.warn('too few unliked articles to recommend (%d > %d)' % (N, limit),
+                      RuntimeWarning)
+        return limit
+    else:
+        return N
+
+
 class Random(Recommender):
     """
     Recommend articles chosen uniformly from all the articles.
     """
     def makeRecommendations(self, network, readers, N=1):
-        return {
-            r.userId: random.sample(list(network.candidateArticlesForUser(r.userId)), N)
-            for r in readers
-        }
+        recs = {}
+        for r in readers:
+            candidates = list(network.candidateArticlesForUser(r.userId))
+            recs[r.userId] = random.sample(candidates, clamp(N, len(candidates)))
+        return recs
 
 
 class Popular(Recommender):
@@ -47,10 +58,11 @@ class Popular(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         def numLikes(article):
             return network.userArticleGraph.GetNI(article.getArticleId()).GetDeg()
-        return {
-            reader.userId: heapq.nlargest(N, network.candidateArticlesForUser(reader.userId), numLikes)
-            for reader in readers
-        }
+        recs = {}
+        for r in readers:
+            candidates = list(network.candidateArticlesForUser(r.userId))
+            recs[r.userId] = heapq.nlargest(clamp(N, len(candidates)), candidates, numLikes)
+        return recs
 
 
 class ContentBased(Recommender):
@@ -70,8 +82,10 @@ class ContentBased(Recommender):
     def makeRecommendations(self, network, readers, N=1):
         recs = {}
         for reader in readers:
-            candidates = network.candidateArticlesForUser(reader.userId)
-            recs[reader.userId] = heapq.nlargest(N, candidates, lambda c: self.TRUST[c.source][reader.politicalness])
+            def trustScore(candidate):
+                return self.TRUST[candidate.source][reader.politicalness]
+            candidates = list(network.candidateArticlesForUser(reader.userId))
+            recs[reader.userId] = heapq.nlargest(clamp(N, len(candidates)), candidates, trustScore)
         return recs
 
 
@@ -161,7 +175,6 @@ class CollaborativeFiltering(Recommender):
             ratersA = set(network.userArticleGraph.GetNI(a).GetOutEdges())
             ratersB = set(network.userArticleGraph.GetNI(b).GetOutEdges())
 
-            # NEW METHOD
             # Modified Jaccard similarity, |A ^ B| / min(|A|, |B|)
             # This makes sure that the similarity between articles with vastly different
             # number of likes will be normalized with respect to the smaller of the
@@ -170,41 +183,39 @@ class CollaborativeFiltering(Recommender):
             bot = min(len(ratersA), len(ratersB))
             sim[a, b] = top / bot if bot > 0 else 0
 
-            # OLD METHOD
-            # Use Jaccard similarity with correction
-            # The correction makes the similarity approach the source similarity
-            # as the unions of the ratings approaches zero.
-            # sim[a, b] = (top + source_similarity * self.SOURCE_SIM_WEIGHT) / (bot + self.SOURCE_SIM_WEIGHT)
-
-            # if bot == 0:
-            #     num_undefined += 1
-            # if bot > 0:
-            #     if top == 0:
-            #         num_zero_intersection += 1
-            #     else:
-            #         nice.append(top / bot)
-
         # nice.sort()
         # median = nice[len(nice) // 2]
         # print 'undefined:', num_undefined, 'nonoverlapping:', num_zero_intersection, 'goodmedian:', median
 
+        # random.shuffle(readers)
         # For each reader:
         recs = {}
         for reader in readers:
-            candidateArticles = list(network.candidateArticlesForUser(reader.userId))
-            if len(candidateArticles) >= N:
-                # Compute dot product between the user's rating vector and the item-item similarity vector
-                # for each candidate article. For each candidate article, this is basically the sum of the similarities
-                # between the candidate article and the articles that the reader has liked.
-                # This will sum up exactly as many similarities as the number of articles that the reader has liked.
-                # Then we should choose the articles with the highest score.
-                likedArticles = list(network.articlesLikedByUser(reader.userId))
-                def score(candidate):
-                    return sum(sim[candidate.articleId, liked.articleId] for liked in likedArticles)
-                recs[reader.userId] = heapq.nlargest(N, candidateArticles, score)
-            else:
-                # Default to content-based.
-                recs[reader.userId] = ContentBased().makeRecommendations(network, readers, N)
+            # If there aren't enough candidates use default recommender
+            candidates = list(network.candidateArticlesForUser(reader.userId))
+            numDefault = max(0, N - len(candidates))
+
+            # Compute dot product between the user's rating vector and the
+            # item-item similarity vector for each candidate article. For each
+            # candidate article, this is basically the sum of the similarities
+            # between the candidate article and the articles that the reader has
+            # liked. This will sum up exactly as many similarities as the number
+            # of articles that the reader has liked. Then we should choose the
+            # articles with the highest score.
+            likedArticles = list(network.articlesLikedByUser(reader.userId))
+            def score(candidate):
+                return sum(sim[candidate.articleId, liked.articleId] for liked in likedArticles)
+            thisRecs = heapq.nlargest(N - numDefault, candidates, score)
+
+            # Fill our remaining recommendations with Content-Based default
+            defaulted = ContentBased().makeRecommendations(network, [reader], numDefault)[reader.userId]
+            thisRecs.extend(defaulted)
+            recs[reader.userId] = thisRecs
+
+        # DEBUG: print out recommendations for last user
+        # deb = [(article.articleId, score(article)) for article in candidates]
+        # deb.sort(reverse=True, key=lambda p: p[1])
+        # print 'numliked:', len(likedArticles), deb
 
         return recs
 

@@ -1483,7 +1483,7 @@ class UserUserGraphCutMinimization(Metric):
 
     def plot(self, experiment, network, history):
         # Try to cluster into two clusters
-        G = network.getUserUserGraphMatrix()
+        G, idx2user = network.getUserUserGraphMatrix()
         L_normed = laplacian(G, normed=True)
         w, v = eigsh(L_normed, k=2, which='SM')
         print 'eigvalues:', w
@@ -1492,11 +1492,9 @@ class UserUserGraphCutMinimization(Metric):
         # Count distribution of political preference in each cluster
         countsA = collections.Counter()
         countsB = collections.Counter()
-        for userId in xrange(len(assignments)):
-            user = network.users.get(userId)
-            if user is None:
-                continue
-            if assignments[userId] > 0:
+        for idx in xrange(len(assignments)):
+            user = idx2user[idx]
+            if assignments[idx] > 0:
                 countsA[user.politicalness] += 1
             else:
                 countsB[user.politicalness] += 1

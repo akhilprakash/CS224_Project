@@ -91,6 +91,7 @@ class Experiment(object):
 
     SOURCES = PLike.TRUST.keys()
     WEIGHTS_SOURCES = [1.0 / len(SOURCES)] * len(SOURCES)  # uniform weights
+    NUM_NEW_ARTICLES_PER_ITER = 5
 
     def __init__(self,
                  numIterations=100,
@@ -99,9 +100,11 @@ class Experiment(object):
                  nullRecommender='Random',
                  networkInitType='random',
                  pLikeMethod='empirical',
+
                  friendGraphFile= 'zacharys.csv', #'CA-GrQc.txt',
                  numOnlinePerIteration=100,
                  numRecsPerIteration=5,
+
                  outputDir=os.path.join('out', '{params}'),
                  ):
         """
@@ -225,7 +228,7 @@ class Experiment(object):
         readers = self.network.getNextReaders(self.numOnlinePerIteration)
 
         # Introduce new articles
-        new_articles = [self.introduceArticle(i) for _ in xrange(self.numRecsPerIteration)]
+        new_articles = [self.introduceArticle(i) for _ in xrange(self.NUM_NEW_ARTICLES_PER_ITER)]
 
         # print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
         #     sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
@@ -235,7 +238,7 @@ class Experiment(object):
 
         # Compute recommendations and "show" them to users
         self.showRecommendations(self.nullRecommender, readers, self.numRecsPerIteration / 2)
-        self.showRecommendations(self.recommender, readers, self.numRecsPerIteration / 2)
+        self.showRecommendations(self.recommender, readers, self.numRecsPerIteration)
 
         # Analyze resulting graph at this iteration
         self.runAnalysis(i)
