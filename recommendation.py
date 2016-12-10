@@ -94,11 +94,12 @@ class Instagram(Recommender):
                 and not article.isDead
             ]
             # If there aren't enough candidates use default recommender
-            # TODO: only use default for the remaining number of articles, not all or nothing
-            if len(candidates) >= N:
-                recs[reader.userId] = random.sample(candidates, N)
-            else:
-                recs[reader.userId] = self.default_recommender.makeRecommendations(network, readers, N)
+            numDefault = max(0, N - len(candidates))
+            sampled = random.sample(candidates, N - numDefault)
+            defaulted = self.default_recommender.makeRecommendations(
+                network, [reader], numDefault)[reader.userId]
+            sampled.extend(defaulted)
+            recs[reader.userId] = sampled
         return recs
 
 
