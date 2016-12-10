@@ -129,10 +129,10 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                # evaluation.OverallClustering(),
-                # evaluation.CliquePercolation(),
-                evaluation.Statistics()
-            ] #evaluation.GraphViz(),
+                evaluation.Statistics() #,
+                #evaluation.UserUserGraphCutMinimization(),
+            ]
+
         self.histories = defaultdict(list)
 
     def _parameters(self, delimiter):
