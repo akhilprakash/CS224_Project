@@ -24,7 +24,8 @@ class Network(object):
     X_MIN = 1
 
     # TODO: is this based on data?
-    POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .3, .2, .3, .1]
+    #http://www.gallup.com/poll/188096/democratic-republican-identification-near-historical-lows.aspx
+    POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .2, .4, .2, .1]
 
     def largestNodeId(self, graph):
         maxNodeId = -1
@@ -165,9 +166,10 @@ class Network(object):
                     weight = 0
                 else:
                     weight = float(len(Nbrs)) / (self.userArticleGraph.GetNI(uId1).GetOutDeg() + self.userArticleGraph.GetNI(uId2).GetOutDeg())
-                    G.add_edge(uId1, uId2, weight = weight)
-                    edgeToWeightDict[(uId1, uId2)] = weight
-                    userUserGraph.AddEdge(uId1, uId2)
+                    if weight > .15:
+                        G.add_edge(uId1, uId2, weight = weight)
+                        edgeToWeightDict[(uId1, uId2)] = weight
+                        userUserGraph.AddEdge(uId1, uId2)
         
         return (G, userUserGraph, edgeToWeightDict)
 

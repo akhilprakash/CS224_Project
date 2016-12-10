@@ -315,7 +315,7 @@ class CliquePercolation(Metric):
                 plt.xlabel("Politicalness")
                 plt.ylabel("Count")
                 plt.title("Count vs. Politicalness Community = " + str(i))
-                plt.savefig(util.out_path(self.safe_name  + "community=" + str(i) + '.png', "CliquePercolation"))
+                plt.savefig(experiment.out_path(self.safe_name  + "community=" + str(i) + '.png'))
                 plt.close()
             except IOError:
                 print_error("Error making plot")
@@ -360,7 +360,7 @@ class WeightedGirvanNewman(Metric):
 
     def plot(self, experiment, network, history):
         print "start creating user user graph"
-        G, _ , _ = network.createUserUserGraph()
+        G, _ , edgeWeightDict = network.createUserUserGraph()
         print "finished creating user user graph"
         betweenessCentr = nx.edge_betweenness_centrality(G, normalized=True, weight="weight")
         numEdgesRemoved = 0
@@ -407,10 +407,19 @@ class WeightedGirvanNewman(Metric):
                 plt.xlabel("Politicalness")
                 plt.ylabel("Count")
                 plt.title("Count vs. Politicalness Community = " + str(i))
-                plt.savefig(util.out_path(self.safe_name  + "community=" + str(i) + '.png', "Modularity2"))
+                plt.savefig(experiment.out_path(self.safe_name  + "community=" + str(i) + '.png'))
                 plt.close()
             except IOError:
                 print_error("Error making plot")
+        print "making edge weight histogram"
+        plt.figure()
+        plt.hist(edgeWeightDict.values())
+        plt.xlabel("Edge Weights")
+        plt.ylabel("Frequency")
+        plt.title("Histogram of Edge Weights")
+        plt.savefig(experiment.out_path(self.safe_name + "Edge weight dict" + ".png"))
+        plt.close()
+        print "finished making edge weight histogram"
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path(self.safe_name), history)
@@ -603,7 +612,7 @@ class PathsBetweenPoliticalnesses(Metric):
         plt.xlabel("Number of Iterations")
         plt.ylabel("Average Distance Between Politicalness")
         plt.title("Average Distance Between " + str(self.politicalness1) + " and " + str(self.politicalness2))
-        plt.savefig(util.out_path(self.safe_name + '.png', "PathsBetweenPoliticalnesses"))
+        plt.savefig(experiment.out_path(self.safe_name + '.png'))
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("pathsbetweenpoliticalness" + str(self.politicalness1) + str(self.politicalness2)), history)
@@ -657,7 +666,7 @@ class Modularity2(Metric):
                     plt.xlabel("Politicalness")
                     plt.ylabel("Count")
                     plt.title("Count vs. Politicalness Community = " + str(cmty))
-                    plt.savefig(experiment.out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i+len(modularity) -5) + '.png', "Modularity2"))
+                    plt.savefig(experiment.out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png'))
                     plt.close()
                 except IOError:
                     print_error("Error making plot")
@@ -689,7 +698,7 @@ class Modularity(Metric):
                 plt.figure()
                 oneCluster = map(lambda x:x[idx], history)
                 plt.plot(oneCluster)
-                plt.savefig(util.out_path(self.safe_name + 'politicalness' + str(i) + id + '.png', "Modularity"))
+                plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + id + '.png'))
                 plt.close()
 
         ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
@@ -805,7 +814,7 @@ class Betweenness(Metric):
                         plt.xlabel("Politicalness")
                         plt.ylabel("Count")
                         plt.title("Count vs. Politicalness Community = "+ str(i))
-                        plt.savefig(util.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + id + '.png', "Betweenness_Community"))
+                        plt.savefig(experiment.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + id + '.png'))
                         plt.close()
 
         ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
@@ -908,7 +917,7 @@ class ArticleDegreeDistribution(Metric):
             plt.xlabel("Aricle Degree")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Degree")
-            plt.savefig(util.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "AritcleDegree"))
+            plt.savefig(experiment.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png'))
             plt.close()
 
     def save(self, experiment, history):
@@ -943,7 +952,7 @@ class DistributionOfLifeTime(Metric):
             plt.xlabel("Aricle Lifetime")
             plt.ylabel("Frequency")
             plt.title("Histogram of Article Lifetime")
-            plt.savefig(util.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png', "LifetimeDistribution"))
+            plt.savefig(experiment.out_path(self.safe_name + self.article_type + "time=" + str(i) + '.png'))
             plt.close()
 
     def save(self, experiment, history):
@@ -986,8 +995,8 @@ class AliveArticles(Metric):
 class OverallClustering(Metric):
     def measure(self, experiment, network, iterations):
         #printGraph(network.userArticleGraph)
-        if iterations % 50 == 0:
-            return [snap.GetClustCf(network.userArticleGraph, -1), snap.GetClustCf(network.userArticleFriendGraph, -1), snap.GetClustCf(network.createUserUserGraph()[1], -1)]
+        if iterations % 20 == 0:
+            return [snap.GetClustCf(network.userArticleGraph, -1), snap.GetClustCf(network.userArticleFriendGraph, -1), snap.GetClustCf(network.getUserUserGraph()[0], -1)]
         return [snap.GetClustCf(network.userArticleGraph, -1), snap.GetClustCf(network.userArticleFriendGraph, -1), -1]
 
     def plot(self, experiment, network, history):
@@ -1089,7 +1098,7 @@ class ClusterPoliticalness(Metric):
                     cluster.append(result)
             return mean(cluster)
         if iterations % 40 == 0:
-            return [clusterPolticalness(network.userArticleGraph), clusterPolticalness(network.userArticleFriendGraph), clusterPolticalness(network.createUserUserGraph()[1])]
+            return [clusterPolticalness(network.userArticleGraph), clusterPolticalness(network.userArticleFriendGraph), clusterPolticalness(network.getUserUserGraph()[0])]
         return [clusterPolticalness(network.userArticleGraph), clusterPolticalness(network.userArticleFriendGraph), -1]
 
     def plot(self, experiment, network, history):
@@ -1149,7 +1158,7 @@ class LargestConnectedComponent(Metric):
             print self.name
             plt.figure()
             plt.bar(range(len(elem)), elem)
-            plt.savefig(util.out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png', "LargestConnectedComponent"))
+            plt.savefig(experiment.out_path(self.safe_name + "connected_compoenents_" + str(i) + '.png'))
             plt.close()
         largestComponent = map(max, history)
         plt.figure()
@@ -1191,7 +1200,7 @@ class EigenVectors(Metric):
                 return sorted(result)
             except:
                 return []
-        return [eigenvector(network.userArticleGraph), eigenvector(network.userArticleFriendGraph), eigenvector(network.createUserUserGraph()[1])]
+        return [eigenvector(network.userArticleGraph), eigenvector(network.userArticleFriendGraph), eigenvector(network.getUserUserGraph()[0])]
 
     def plot(self, experiment, network, history):
         
