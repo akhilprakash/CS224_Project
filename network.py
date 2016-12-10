@@ -223,6 +223,7 @@ class Network(object):
         beta = self.getBeta(userNodeId)
         return beta
 
+    # TODO: verify that this works and is efficient enough?
     def sampleFromPowerLawExponentialCutoff(self, userNodeId):
         # Rejection sampling
         # g is uniform 0,1

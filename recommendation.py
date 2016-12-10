@@ -75,6 +75,7 @@ class ContentBased(Recommender):
         return recs
 
 
+# FIXME
 class Instagram(Recommender):
     """
     Uniformly shows reader all the articles that their friends liked.
@@ -93,6 +94,7 @@ class Instagram(Recommender):
                 and not article.isDead
             ]
             # If there aren't enough candidates use default recommender
+            # TODO: only use default for the remaining number of articles, not all or nothing
             if len(candidates) >= N:
                 recs[reader.userId] = random.sample(candidates, N)
             else:
