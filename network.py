@@ -5,7 +5,6 @@ from sets import Set
 import snap
 import util
 from user import User
-import networkx as nx
 import numpy as np
 import heapq
 
@@ -40,10 +39,8 @@ class Network(object):
         self.articles = {}
         if friendGraphFile[-3:] == "csv":
             self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, ",")    
-            self.networkxFriendGraph = nx.read_edgelist(friendGraphFile, delimiter=",")
         else:
             self.friendGraph = snap.LoadEdgeList(snap.PUNGraph, friendGraphFile, 0, 1, "\t")
-            self.networkxFriendGraph = nx.read_edgelist(friendGraphFile, delimiter="\t")
         print self.friendGraph.GetNodes()
         self.userArticleGraph = snap.TUNGraph.New()
         self.articleIdCounter = self.largestNodeId(self.friendGraph) + 1
