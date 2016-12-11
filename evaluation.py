@@ -19,7 +19,6 @@ import snap
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import laplacian
-import pdb
 import util
 from util import print_error
 from collections import defaultdict
@@ -763,31 +762,6 @@ class Modularity(Metric):
         util.writeCSV(experiment.out_path("modularity"), history)
 
 
-# class ModularityWRTFriends(Metric):
-#     def measure(self, experiment, network, iterations):
-#         result = []
-#         for idx, i in enumerate(range(-2, 3)):
-#             ids = network.getUserIdsWithSpecificPoliticalness(i)
-#             Nodes = snap.TIntV()
-#             for ni in ids:
-#                 Nodes.Add(ni)
-#             result.append(snap.GetModularity(network.userArticleFriendGraph, Nodes))
-
-#         return result
-
-#     def plot(self, experiment, network, history):
-#         for idx, i in enumerate(range(-2, 3)):
-#             print self.name
-#             plt.figure()
-#             oneCluster = map(lambda x:x[idx], history)
-#             plt.plot(oneCluster)
-#             plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
-#             plt.close()
-
-#     def save(self, experiment, history):
-#         util.writeCSV(experiment.out_path("modularity"), history)
-
-
 def copyGraph(graph):
     copyGraph = snap.TUNGraph.New()
     for node in graph.Nodes():
@@ -1379,13 +1353,11 @@ class CommonArticles(Metric):
         plt.savefig(experiment.out_path(self.safe_name + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
         plt.close()
 
-
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("CommonArticles_" + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
 
 
 class VisualizeGraph(Metric):
-
     def measure(self, experiment, network, iterations):
         eigenvector, dictionary, matrix = getEigenVectorEigenValue(network)
         
