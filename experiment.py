@@ -165,7 +165,7 @@ class Experiment(object):
             self.metrics = [
                 evaluation.Statistics(),
                 evaluation.ItemDegreeHeterogeneity(),
-                # evaluation.UserArticleGraphClustCoeff(),
+                evaluation.NumberOfSquares(),
                 #evaluation.UserUserGraphCutMinimization(),
             ]
 

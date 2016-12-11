@@ -115,8 +115,8 @@ class Statistics(Metric):
 
         avg_std = np.mean(std_overTwo.values())
         # sum_var = np.sum(vars_overTwo.values())
-        print 'AVG STD IN POs'
-        print avg_std
+        # print 'AVG STD IN POs'
+        # print avg_std
 
         '''
         IDs, stds = zip(*sorted(zip(reader_PO_std.keys(), reader_PO_std.values()), key=lambda x: x[1]))
@@ -1453,16 +1453,23 @@ class ItemDegreeHeterogeneity(Metric):
         plt.savefig(experiment.out_path(self.safe_name))
 
 
-class UserArticleGraphClustCoeff(Metric):
+class NumberOfSquares(Metric):
+    # Number of largest eigenvalues to use to estimate number of squares
+    # The more the more accurate, but slower
+    NUM_EIGENVALUES = 100
+
     def measure(self, experiment, network, iterations):
         # Use at most N samples, where N is the number of users
-        N = len(network.users)
-        return snap.GetClustCf(network.userArticleGraph, N)
+        PEigV = snap.TFltV()
+        with util.stdout_redirected():
+            snap.GetEigVals(network.userArticleGraph, self.NUM_EIGENVALUES, PEigV)
+        eigenvalues = np.array(list(PEigV))
+        return np.sum(np.power(eigenvalues, 4)) / 12
 
     def plot(self, experiment, network, history):
         plt.figure()
         plt.plot(history)
         plt.xlabel('iterations')
-        plt.ylabel('average clustering coefficient')
-        plt.title('Evolution of Clustering Coefficient\n' + experiment.parameters, fontsize=7)
+        plt.ylabel('number of squares')
+        plt.title('Evolution of NoS\n' + experiment.parameters, fontsize=7)
         plt.savefig(experiment.out_path(self.safe_name))

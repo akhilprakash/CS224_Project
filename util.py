@@ -7,6 +7,7 @@ import math
 import random
 import sys
 import time
+from contextlib import contextmanager
 
 import numpy as np
 
@@ -164,3 +165,31 @@ class PairsDict(dict):
             return dict.__getitem__(self, key)
         else:
             return dict.__getitem__(self, (v, u))
+
+
+@contextmanager
+def stdout_redirected(to=os.devnull):
+    '''
+    import os
+
+    with stdout_redirected(to=filename):
+        print("from Python")
+        os.system("echo non-Python applications are also supported")
+    '''
+    stdoutfd = sys.stdout.fileno()
+
+    ##### assert that Python and C stdio write using the same file descriptor
+    ####assert libc.fileno(ctypes.c_void_p.in_dll(libc, "stdout")) == fd == 1
+
+    def _redirect_stdout(to):
+        os.dup2(to.fileno(), stdoutfd) # fd writes to 'to' file
+
+    with os.fdopen(os.dup(stdoutfd), 'wb') as old_stdout:
+        with open(to, 'wb') as file:
+            _redirect_stdout(to=file)
+        try:
+            yield # allow code to be run with the redirected stdout
+        finally:
+            _redirect_stdout(to=old_stdout) # restore stdout.
+                                            # buffering and flags such as
+                                            # CLOEXEC may be different
