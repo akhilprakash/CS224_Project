@@ -66,12 +66,24 @@ def human_time(*args, **kwargs):
     return ", ".join(parts)
 
 
+from collections import deque
+import itertools
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.izip(a, b)
+
+
 class ProgressBar(object):
-    def __init__(self, total=None, width=40):
+    def __init__(self, total=None, width=40, window_size=10):
         self.total = total
         self.width = width
         self.start = time.time()
         self._last_line_length = 0
+        self.window_size = window_size
+        self.ticks = deque()
 
     def __enter__(self):
         return self
@@ -81,7 +93,13 @@ class ProgressBar(object):
         elapsed = now - self.start
         return int(elapsed / ratio * (1. - ratio))
 
+
     def update(self, done):
+        # Update ticks
+        self.ticks.append(time.time())
+        if len(self.ticks) > self.window_size:
+            self.ticks.popleft()
+
         # Erase
         sys.stdout.write('\r')
         sys.stdout.write(' ' * self._last_line_length)
