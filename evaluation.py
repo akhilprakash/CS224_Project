@@ -25,6 +25,7 @@ import pdb
 import util
 from util import print_error
 from collections import defaultdict
+from collections import Counter
 
 try:
     import networkx as nx
@@ -113,7 +114,7 @@ class Statistics(Metric):
             reader_PO_std[articleID] = np.std(POs_of_readers[articleID])
 
         # Calculate the average and sum over variances of articles that were liked by over two readers
-        timesLiked_overTwo = {k: v for (k, v) in timesLiked.items() if v > 2}
+        timesLiked_overTwo = {k: v for (k, v) in timesLiked.items() if v > 4}
         std_overTwo = {k: reader_PO_std[k] for k in timesLiked_overTwo.keys()}
 
         avg_std = np.mean(std_overTwo.values())
@@ -258,7 +259,7 @@ class Statistics(Metric):
 
 
         # Calculate the average and sum over variances of articles that were liked by over two readers
-        timesLiked_overTwo = {k:v for (k,v) in timesLiked.items() if v > 2}
+        timesLiked_overTwo = {k:v for (k,v) in timesLiked.items() if v > 4}
         std_overTwo = {k: reader_PO_std[k] for k in timesLiked_overTwo.keys()}
 
         # average over variances where greater than 2 samples
@@ -344,30 +345,115 @@ class HierClustering(Metric):
         pass
 
     def plot(self, experiment, network, history):
-        adj_matrix = network.getUserUserGraphMatrix()
+        dense_matrix, index_to_user = network.getUserUserGraphMatrix()
         # print adj_matrix
         # convert to dense distance matrix
-        dense_matrix = adj_matrix.toarray()
+        #dense_matrix = adj_matrix.toarray()
 
+
+        # compute number of articles liked by user
+        userIDs = network.users.keys()
+        numLiked = {userID: 0 for userID in userIDs}  # Number of articles each user liked
+        for userID in userIDs:
+            for article in network.articlesLikedByUser(userID):
+                numLiked[userID] += 1
+
+        # Delete users that liked nothing from dense_matrix and index_to_user
+        userID_to_index = {v.userId: k for k, v in index_to_user.iteritems()}
+        userIDs_that_liked_something = [k for (k,v) in numLiked.items() if v > 0]
+        indices_that_liked_something = [userID_to_index[userId] for userId in userIDs_that_liked_something]
+        indices_that_liked_something.sort()
+        reduced_index_to_userID = {
+            reduced_index: index_to_user[index]
+            for reduced_index, index in enumerate(indices_that_liked_something)
+            }
+        reduced_matrix = dense_matrix[:, indices_that_liked_something]
+        reduced_matrix = reduced_matrix[indices_that_liked_something, :]
+
+        print reduced_matrix
+
+        dense_matrix = reduced_matrix
+        index_to_user = reduced_index_to_userID
+
+
+
+        # for each index in the matrix, get the userID, then get the number of articles liked by that user, then divide row by that
+        '''
+        for i in range(0, len(userIDs)):
+            userID = index_to_user[i].userId
+            totalLiked = numLiked[userID]
+            dense_matrix[i,:] /= (totalLiked + 1.0)
+            dense_matrix[:, i] /= (totalLiked + 1.0)
+
+            # num shared/(liked by 1* liked y 2)
+
+        #exp_dist = np.square(dense_matrix)
+        #print exp_dist.shape
+        np.fill_diagonal(dense_matrix, 0)
+        # print exp_dist.shape
         # convert to condensend dist matrix (squareform)
+        # print exp_dist
+        '''
+
         cond_dist = squareform(dense_matrix)
         # run hier clust
-        linkage_matrix = scipy.cluster.hierarchy.linkage(cond_dist, method='average')
+        linkage_matrix = scipy.cluster.hierarchy.linkage(cond_dist, method='complete')
+
+        # Cut the linkage matrix at various points, see composition of cluster
+        n_vals = [5, 10, 15, 20]
+
+        assignments = scipy.cluster.hierarchy.fcluster(Z=linkage_matrix, t=7, criterion = "distance")
+
+        # For each possible cut, print the num clusters and the number of each pol orient in each cluster
+
+        # for each cluster, get the indices of users in that cluster, then get the POs of those users and count them
+        for clustnum in np.unique(assignments):
+            print 'cluster ' + str(clustnum)
+            users_in_clust = [i for i, x in enumerate(assignments) if x == clustnum]
+            POs_users_in_clust = [index_to_user[u].politicalness for u in users_in_clust]
+            articles_read_in_clust = [numLiked[index_to_user[u].userId] for u in users_in_clust]
+            print Counter(POs_users_in_clust)
+            print Counter(articles_read_in_clust)
+
 
         # plot dendrogram
 
-        plt.figure()
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
         plt.title("Hierarchical Clustering Dendrogram \n " + str(experiment.parameters))
         plt.xlabel('sample index')
         plt.ylabel('distance')
         scipy.cluster.hierarchy.dendrogram(
             linkage_matrix,
-            leaf_rotation=90.,  # rotates the x axis labels
-            leaf_font_size=8.,  # font size for the x axis labels
+            labels=[index_to_user[index].politicalness for index in range(0, len(index_to_user.keys()))],
+            leaf_font_size=1.,  # font size for the x axis labels
+            # leaf_rotation=90.,  # rotates the x axis labels
         )
+        ax.tick_params(axis='x', which='major', labelsize=1)
         plt.savefig(experiment.out_path(self.safe_name)+ " Dendrogram" + ".png")
         plt.close()
 
+
+
+
+        '''
+        cutree = scipy.cluster.hierarchy.cut_tree(Z=linkage_matrix, n_clusters=n_vals)
+
+        # For each possible cut, print the num clusters and the number of each pol orient in each cluster
+        for i in range(0, len(n_vals)):
+            print str(n_vals[i]) + " CLUSTERS"
+            assignments = cutree[i,:]
+            # for each cluster, get the indices of users in that cluster, then get the POs of those users and count them
+            for clustnum in range(0, n_vals[i]):
+                print 'cluster ' + str(clustnum)
+                users_in_clust = assignments.index(clustnum)
+                POs_users_in_clust = [index_to_user[u].politicalness for u in users_in_clust]
+                print Counter(POs_users_in_clust)
+        '''
+
+
+
+        # print index_to_user
 
     def save(self, experiment, history):
         pass

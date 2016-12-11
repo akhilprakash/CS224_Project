@@ -101,7 +101,7 @@ class Experiment(object):
                  networkInitType='random',
                  pLikeMethod='empirical',
 
-                 friendGraphFile= 'zacharys.csv', #'CA-GrQc.txt',
+                 friendGraphFile= 'CA-GrQc.txt', #'zacharys.csv', #
                  numOnlinePerIteration=100,
                  numRecsPerIteration=5,
 
