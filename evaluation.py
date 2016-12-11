@@ -396,7 +396,7 @@ class HierClustering(Metric):
         reduced_matrix = dense_matrix[:, indices_that_liked_something]
         reduced_matrix = reduced_matrix[indices_that_liked_something, :]
 
-        print reduced_matrix
+        # print reduced_matrix
 
         dense_matrix = reduced_matrix
         index_to_user = reduced_index_to_userID
@@ -426,36 +426,36 @@ class HierClustering(Metric):
         linkage_matrix = scipy.cluster.hierarchy.linkage(cond_dist, method='complete')
 
         # Cut the linkage matrix at various points, see composition of cluster
-        n_vals = [5, 10, 15, 20]
+        # n_vals = [5, 10, 15, 20]
 
-        assignments = scipy.cluster.hierarchy.fcluster(Z=linkage_matrix, t=7, criterion = "distance")
+        # assignments = scipy.cluster.hierarchy.fcluster(Z=linkage_matrix, t=7, criterion = "distance")
 
         # For each possible cut, print the num clusters and the number of each pol orient in each cluster
 
         # for each cluster, get the indices of users in that cluster, then get the POs of those users and count them
-        for clustnum in np.unique(assignments):
-            print 'cluster ' + str(clustnum)
-            users_in_clust = [i for i, x in enumerate(assignments) if x == clustnum]
-            POs_users_in_clust = [index_to_user[u].politicalness for u in users_in_clust]
-            articles_read_in_clust = [numLiked[index_to_user[u].userId] for u in users_in_clust]
-            print Counter(POs_users_in_clust)
-            print Counter(articles_read_in_clust)
+        # for clustnum in np.unique(assignments):
+            # print 'cluster ' + str(clustnum)
+            # users_in_clust = [i for i, x in enumerate(assignments) if x == clustnum]
+            # POs_users_in_clust = [index_to_user[u].politicalness for u in users_in_clust]
+            # articles_read_in_clust = [numLiked[index_to_user[u].userId] for u in users_in_clust]
+            # print Counter(POs_users_in_clust)
+            # print Counter(articles_read_in_clust)
 
 
         # plot dendrogram
 
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1)
-        plt.title("Hierarchical Clustering Dendrogram \n " + str(experiment.parameters))
-        plt.xlabel('sample index')
-        plt.ylabel('distance')
+        plt.title("Hierarchical Clustering Dendrogram \n " + str(experiment.parameters), fontsize=7)
+        plt.xlabel("User's Political Orientation")
+        plt.ylabel('Distance')
         scipy.cluster.hierarchy.dendrogram(
             linkage_matrix,
             labels=[index_to_user[index].politicalness for index in range(0, len(index_to_user.keys()))],
-            leaf_font_size=1.,  # font size for the x axis labels
-            # leaf_rotation=90.,  # rotates the x axis labels
+            leaf_font_size=7.,  # font size for the x axis labels
+            #leaf_rotation=90.,  # rotates the x axis labels
         )
-        ax.tick_params(axis='x', which='major', labelsize=1)
+        # ax.tick_params(axis='x', which='major', labelsize=1)
         plt.savefig(experiment.out_path(self.safe_name)+ " Dendrogram" + ".png")
         plt.close()
 

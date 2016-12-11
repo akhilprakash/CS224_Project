@@ -91,7 +91,6 @@ class Experiment(object):
 
     SOURCES = PLike.TRUST.keys()
     WEIGHTS_SOURCES = [1.0 / len(SOURCES)] * len(SOURCES)  # uniform weights
-    NUM_NEW_ARTICLES_PER_ITER = 5
 
     def __init__(self,
                  numIterations=100,
@@ -100,12 +99,14 @@ class Experiment(object):
                  nullRecommender='Random',
                  networkInitType='random',
                  pLikeMethod='empirical',
-
                  friendGraphFile= 'CA-GrQc.txt', #'zacharys.csv', #
                  numOnlinePerIteration=500,
                  numRecsPerIteration=20,
-
+                 numNewArticlesPerIteration=5,
+                 numOnlinePerIteration=500,
+                 numRecsPerIteration=20,
                  outputDir=os.path.join('out', '{params}'),
+                 metrics=None,
                  ):
         """
         Constructor for Experiment.
@@ -118,6 +119,7 @@ class Experiment(object):
         """
         self.start_time = datetime.datetime.now()
         self.numIterations = numIterations
+        self.numNewArticlesPerIteration = numNewArticlesPerIteration
         self.allAnalyses = allAnalyses
         self.numRecsPerIteration = numRecsPerIteration
         self.numOnlinePerIteration = numOnlinePerIteration
@@ -128,7 +130,9 @@ class Experiment(object):
         self.outputDir = outputDir
         self.recommender = getattr(recommendation, recommender)()
         self.nullRecommender = getattr(recommendation, nullRecommender)()
-        if self.allAnalyses:
+        if metrics is not None:
+            self.metrics = metrics
+        elif self.allAnalyses:
             self.metrics = [
                 #evaluation.ReadingDistribution(),
                 evaluation.PathsBetweenPoliticalnesses(),
@@ -232,7 +236,7 @@ class Experiment(object):
         readers = self.network.getNextReaders(self.numOnlinePerIteration)
 
         # Introduce new articles
-        new_articles = [self.introduceArticle(i) for _ in xrange(self.NUM_NEW_ARTICLES_PER_ITER)]
+        new_articles = [self.introduceArticle(i) for _ in xrange(self.numNewArticlesPerIteration)]
 
         # print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
         #     sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
