@@ -1,11 +1,17 @@
 import os
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
 import evaluation
 from experiment import Experiment
 from util import ensure_path_exists
+
+
+# TODO: CHANGE THIS TO REFLECT WHAT YOU'RE TESTING
+combined_plots_dir = ensure_path_exists(os.path.join('out', 'propagationinit.empiricalplike'))
 
 
 # Create metrics
@@ -60,9 +66,6 @@ for name, exp in exps.items():
     exp.run()
     exp.saveResults()
 
-# TODO: CHANGE THIS
-combined_plots_dir = ensure_path_exists(os.path.join('out', 'propagationinit.empiricalplike'))
-
 # Plot IDH
 plt.figure()
 for name, exp in exps.items():
@@ -70,7 +73,7 @@ for name, exp in exps.items():
 plt.title('Evolution of Item Degree Heterogeneity')
 plt.xlabel('iterations')
 plt.ylabel('item degree heterogeneity')
-plt.legend(exps.keys())
+plt.legend(exps.keys(), loc='lower right')
 plt.savefig(os.path.join('out', 'propagation-idh.png'))
 
 # Plot NoS
@@ -80,7 +83,7 @@ for name, exp in exps.items():
 plt.title('Evolution of Number of Squares')
 plt.xlabel('iterations')
 plt.ylabel('number of squares')
-plt.legend(exps.keys())
+plt.legend(exps.keys(), loc='lower right')
 plt.savefig(os.path.join('out', 'propagation-nos.png'))
 
 # Plot std
