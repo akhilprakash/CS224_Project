@@ -106,7 +106,10 @@ class ProgressBar(object):
         sys.stdout.write('\r')
 
         # Draw bar
-        ratio = done / self.total
+        if self.total != 0:
+            ratio = done / self.total
+        else:
+            ratio = 1
         bars = int(ratio * self.width)
         line = u''.join([
             u'\u2593' * bars,
@@ -138,6 +141,16 @@ def print_error(s):
 
 
 DATA_BASE_DIRECTORY = 'data'
+OUTPUT_BASE_DIRECTORY = 'out'
+
+def out_path(filename, subdir=None):
+    output_dir = OUTPUT_BASE_DIRECTORY
+    if subdir is not None:
+        output_dir = os.path.join(output_dir, subdir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print_error('Created directory ' + output_dir)
+    return os.path.join(output_dir, filename)
 
 
 def ensure_path_exists(path):

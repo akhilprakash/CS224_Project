@@ -99,7 +99,7 @@ class Experiment(object):
                  nullRecommender='Random',
                  networkInitType='random',
                  pLikeMethod='empirical',
-                 friendGraphFile='CA-GrQc.txt',
+                 friendGraphFile= 'CA-GrQc.txt', #'zacharys.csv', #
                  numNewArticlesPerIteration=5,
                  numOnlinePerIteration=500,
                  numRecsPerIteration=20,
@@ -168,9 +168,11 @@ class Experiment(object):
         else:
             self.metrics = [
                 evaluation.Statistics(),
+                evaluation.HierClustering(),
                 evaluation.ItemDegreeHeterogeneity(),
                 evaluation.NumberOfSquares(),
                 #evaluation.UserUserGraphCutMinimization(),
+                evaluation.StackedBarChart()
             ]
 
         self.histories = defaultdict(list)

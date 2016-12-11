@@ -19,9 +19,15 @@ import snap
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import laplacian
+
+from scipy.spatial.distance import squareform
+import scipy.cluster.hierarchy
+import pdb
+
 import util
 from util import print_error
 from collections import defaultdict
+from collections import Counter
 
 try:
     import networkx as nx
@@ -110,7 +116,7 @@ class Statistics(Metric):
             reader_PO_std[articleID] = np.std(POs_of_readers[articleID])
 
         # Calculate the average and sum over variances of articles that were liked by over two readers
-        timesLiked_overTwo = {k: v for (k, v) in timesLiked.items() if v > 2}
+        timesLiked_overTwo = {k: v for (k, v) in timesLiked.items() if v > 4}
         std_overTwo = {k: reader_PO_std[k] for k in timesLiked_overTwo.keys()}
 
         avg_std = np.mean(std_overTwo.values())
@@ -255,7 +261,7 @@ class Statistics(Metric):
 
 
         # Calculate the average and sum over variances of articles that were liked by over two readers
-        timesLiked_overTwo = {k:v for (k,v) in timesLiked.items() if v > 2}
+        timesLiked_overTwo = {k:v for (k,v) in timesLiked.items() if v > 4}
         std_overTwo = {k: reader_PO_std[k] for k in timesLiked_overTwo.keys()}
 
         # average over variances where greater than 2 samples
@@ -332,9 +338,151 @@ class Statistics(Metric):
         # Variance in the readership; how much does distribution of pol.orient of users vary across each article
         # Variance in who read each article
 
+        plt.figure()
+        plt.hist(stds)
+        plt.xlabel("Standard Deviation")
+        plt.ylabel("Frequency")
+        plt.title("Historgram of Standard Deviation")
+        plt.savefig(experiment.out_path(self.safe_name + "histogram" + ".png"))
+        plt.close()
+
+    def save(self, experiment, history):
+        util.writeCSV(experiment.out_path("statistics"), history)
+
+class StackedBarChart(Metric):
+    def measure(self, experiment, network, iterations):
+        pass
+
+    def plot(self, experiment, network, history):
+        print "in stacked bar chart"
+        stackedBar = []
+        for aId in network.articles.keys():
+            for uId in network.userArticleGraph.GetNI(aId).GetOutEdges():
+                stackedBar.append([aId, network.getUser(uId).getPoliticalness(), network.getArticle(aId).getSource()])
+        util.writeCSV(experiment.out_path("stackedBar"), stackedBar)
+        print "finished stacked bar char"
+        for i,oneSim in enumerate(network.userPolticalnessSimulation):
+            freq = Counter(oneSim.values()).most_common()
+            util.writeCSV(experiment.out_path("userPOlticalDistribtuion" + str(i)), freq)
+
+
+class HierClustering(Metric):
+    def measure(self, experiment, network, iterations):
+        pass
+
+    def plot(self, experiment, network, history):
+        dense_matrix, index_to_user = network.getUserUserGraphMatrix()
+        # print adj_matrix
+        # convert to dense distance matrix
+        #dense_matrix = adj_matrix.toarray()
+
+
+        # compute number of articles liked by user
+        userIDs = network.users.keys()
+        numLiked = {userID: 0 for userID in userIDs}  # Number of articles each user liked
+        for userID in userIDs:
+            for article in network.articlesLikedByUser(userID):
+                numLiked[userID] += 1
+
+        # Delete users that liked nothing from dense_matrix and index_to_user
+        userID_to_index = {v.userId: k for k, v in index_to_user.iteritems()}
+        userIDs_that_liked_something = [k for (k,v) in numLiked.items() if v > 0]
+        indices_that_liked_something = [userID_to_index[userId] for userId in userIDs_that_liked_something]
+        indices_that_liked_something.sort()
+        reduced_index_to_userID = {
+            reduced_index: index_to_user[index]
+            for reduced_index, index in enumerate(indices_that_liked_something)
+            }
+        reduced_matrix = dense_matrix[:, indices_that_liked_something]
+        reduced_matrix = reduced_matrix[indices_that_liked_something, :]
+
+        print reduced_matrix
+
+        dense_matrix = reduced_matrix
+        index_to_user = reduced_index_to_userID
+
+
+
+        # for each index in the matrix, get the userID, then get the number of articles liked by that user, then divide row by that
+        '''
+        for i in range(0, len(userIDs)):
+            userID = index_to_user[i].userId
+            totalLiked = numLiked[userID]
+            dense_matrix[i,:] /= (totalLiked + 1.0)
+            dense_matrix[:, i] /= (totalLiked + 1.0)
+
+            # num shared/(liked by 1* liked y 2)
+
+        #exp_dist = np.square(dense_matrix)
+        #print exp_dist.shape
+        np.fill_diagonal(dense_matrix, 0)
+        # print exp_dist.shape
+        # convert to condensend dist matrix (squareform)
+        # print exp_dist
+        '''
+
+        cond_dist = squareform(dense_matrix)
+        # run hier clust
+        linkage_matrix = scipy.cluster.hierarchy.linkage(cond_dist, method='complete')
+
+        # Cut the linkage matrix at various points, see composition of cluster
+        n_vals = [5, 10, 15, 20]
+
+        assignments = scipy.cluster.hierarchy.fcluster(Z=linkage_matrix, t=7, criterion = "distance")
+
+        # For each possible cut, print the num clusters and the number of each pol orient in each cluster
+
+        # for each cluster, get the indices of users in that cluster, then get the POs of those users and count them
+        for clustnum in np.unique(assignments):
+            print 'cluster ' + str(clustnum)
+            users_in_clust = [i for i, x in enumerate(assignments) if x == clustnum]
+            POs_users_in_clust = [index_to_user[u].politicalness for u in users_in_clust]
+            articles_read_in_clust = [numLiked[index_to_user[u].userId] for u in users_in_clust]
+            print Counter(POs_users_in_clust)
+            print Counter(articles_read_in_clust)
+
+
+        # plot dendrogram
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        plt.title("Hierarchical Clustering Dendrogram \n " + str(experiment.parameters))
+        plt.xlabel('sample index')
+        plt.ylabel('distance')
+        scipy.cluster.hierarchy.dendrogram(
+            linkage_matrix,
+            labels=[index_to_user[index].politicalness for index in range(0, len(index_to_user.keys()))],
+            leaf_font_size=1.,  # font size for the x axis labels
+            # leaf_rotation=90.,  # rotates the x axis labels
+        )
+        ax.tick_params(axis='x', which='major', labelsize=1)
+        plt.savefig(experiment.out_path(self.safe_name)+ " Dendrogram" + ".png")
+        plt.close()
+
+
+
+
+        '''
+        cutree = scipy.cluster.hierarchy.cut_tree(Z=linkage_matrix, n_clusters=n_vals)
+
+        # For each possible cut, print the num clusters and the number of each pol orient in each cluster
+        for i in range(0, len(n_vals)):
+            print str(n_vals[i]) + " CLUSTERS"
+            assignments = cutree[i,:]
+            # for each cluster, get the indices of users in that cluster, then get the POs of those users and count them
+            for clustnum in range(0, n_vals[i]):
+                print 'cluster ' + str(clustnum)
+                users_in_clust = assignments.index(clustnum)
+                POs_users_in_clust = [index_to_user[u].politicalness for u in users_in_clust]
+                print Counter(POs_users_in_clust)
+        '''
+
+
+
+        # print index_to_user
+
     def save(self, experiment, history):
         pass
-        util.writeCSV(experiment.out_path("statistics"), history)
 
 
 class CliquePercolation(Metric):
@@ -347,31 +495,74 @@ class CliquePercolation(Metric):
         G, _ , _ = network.createUserUserGraph()
         print "finished creating user user graph"
         
-        cliques = nx.k_clique_communities(G, 5)
-        values = []
-        for c in cliques:
-            dictionary = collections.defaultdict(int)
-            for NI in c:
-                politicalness = 0
-                if NI in network.users:
-                    politicalness = network.users[NI].getPoliticalness()
-                dictionary[politicalness] = dictionary[politicalness] + 1
-            values.append(dictionary)
-        for i, h in enumerate(values):
-            val = []
-            for pol in range(-2, 3):
-                val.append(h[pol])
-            try:
-                print self.name
-                plt.figure()
-                plt.bar(range(-2, 3), val)
-                plt.xlabel("Politicalness")
-                plt.ylabel("Count")
-                plt.title("Count vs. Politicalness Community = " + str(i))
-                plt.savefig(experiment.out_path(self.safe_name  + "community=" + str(i) + '.png'))
-                plt.close()
-            except IOError:
-                print_error("Error making plot")
+        def cliquePerc(G, id):
+            cliques = nx.k_clique_communities(G, 5)
+            values = []
+            for c in cliques:
+                dictionary = collections.defaultdict(int)
+                for NI in c:
+                    politicalness = 0
+                    if NI in network.users:
+                        politicalness = network.users[NI].getPoliticalness()
+                    dictionary[politicalness] = dictionary[politicalness] + 1
+                values.append(dictionary)
+            for i, h in enumerate(values):
+                val = []
+                for pol in range(-2, 3):
+                    val.append(h[pol])
+                try:
+                    print self.name
+                    plt.figure()
+                    plt.bar(range(-2, 3), val)
+                    plt.xlabel("Politicalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Politicalness Community = " + str(i))
+                    plt.savefig(experiment.out_path(self.safe_name  + id + "community=" + str(i) + '.png'))
+                    plt.close()
+                except IOError:
+                    print_error("Error making plot")
+
+        cliquePerc(G, "userUser")
+        cliquePerc(network.networkxFriendGraph, "nxFriendGraph")
+
+class UserPoliticalnessStability(Metric):
+
+    def measure(self, experiment, network, iterations):
+        """Given a Network, return a metric of any type."""
+        pass
+
+    def plot(self, experiment, network, history):
+        """
+        Given a list of objects of the type returned by self.measure, make an
+        appropriate plot of this metric over time.
+        """
+        for i,user in enumerate(network.users):
+            poltical = []
+            for oneSim in network.userPolticalnessSimulation:
+                poltical.append(oneSim[user])
+            plt.figure()
+            plt.hist(poltical)
+            plt.xlabel("Polticalness")
+            plt.ylabel("Frequency")
+            plt.title("User polticalness user=" + str(user))
+            plt.savefig(experiment.out_path(self.safe_name + str(user) + ".png"))
+            plt.close()
+            if i > 50:
+                break
+
+        for i,oneSim in enumerate(network.userPolticalnessSimulation):
+            freq = Counter(oneSim.values()).most_common()
+            print freq
+            plt.figure()
+            plt.bar(map(lambda x: x[0], freq), map(lambda x: x[1], freq))
+            plt.xlabel("Polticalness")
+            plt.ylabel("Frequency")
+            plt.title("Intlaiziaiton of User Polticalness Simulation=" + str(i))
+            plt.savefig(experiment.out_path(self.safe_name + "Overall" + str(i) + ".png"))
+            plt.close()
+
+
+
 
 
 
@@ -672,9 +863,10 @@ class PathsBetweenPoliticalnesses(Metric):
 
 
 class Modularity2(Metric):
-    def measure(self, experiment, network, iterations):
+
+    def mod(self, graph, network):
         CmtyV = snap.TCnComV()
-        modularity = snap.CommunityGirvanNewman(network.userArticleGraph, CmtyV)
+        modularity = snap.CommunityGirvanNewman(graph, CmtyV)
         politicalnessByCommunity = {}
         for Cmty in CmtyV:
             for NI in Cmty:
@@ -682,7 +874,8 @@ class Modularity2(Metric):
                 if NI in network.users:
                     politicalness = network.users[NI].getPoliticalness()
                 elif NI in network.articles:
-                    politicalness = network.articles[NI].getPoliticalness()
+                    #politicalness = network.articles[NI].getPoliticalness()
+                    print "skip"
                 else:
                     raise Exception("Error in finding politicalness")
                 if Cmty in politicalnessByCommunity:
@@ -696,6 +889,10 @@ class Modularity2(Metric):
                     politicalnessByCommunity[Cmty][politicalness] = 1
 
         return [modularity, politicalnessByCommunity]
+
+
+    def measure(self, experiment, network, iterations):
+        return self.mod(network.userArticleGraph, network)
 
     def plot(self, experiment, network, history):
         print self.name
@@ -723,6 +920,24 @@ class Modularity2(Metric):
                     plt.close()
                 except IOError:
                     print_error("Error making plot")
+        result = self.mod(network.friendGraph, network)
+        print "modulairty of friend graph=" + str(result[0])
+        for cmty, innerDict in result[1].items():
+                values = []
+                for pol in range(-2, 3):
+                    values.append(innerDict[pol])
+                try:
+                    print self.name
+                    plt.figure()
+                    plt.bar(range(-2, 3), values)
+                    plt.xlabel("Politicalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Politicalness Community = " + str(cmty))
+                    plt.savefig(experiment.out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png'))
+                    plt.close()
+                except IOError:
+                    print_error("Error making plot")
+
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("modularity2"), history)
@@ -813,7 +1028,7 @@ class Betweenness(Metric):
                 values.append(dictionary)
             return [betweenessCentr, values]
 
-        return [betweeeness(network.userArticleGraph), betweeeness(network.userArticleFriendGraph), betweeeness(network.createUserUserGraph()[1])]
+        return [betweeeness(network.friendGraph), betweeeness(network.userArticleGraph), betweeeness(network.userArticleFriendGraph), betweeeness(network.createUserUserGraph()[1])]
 
     def plot(self, experiment, network, history):
 
@@ -845,7 +1060,7 @@ class Betweenness(Metric):
                         plt.savefig(experiment.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + id + '.png'))
                         plt.close()
 
-        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+        ids = ["friendGraph","userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
         for i, id in enumerate(ids):
             plotHelper(map(lambda x: x[i], history), id)
 
@@ -1240,6 +1455,7 @@ class EigenVectors(Metric):
         ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
         for i, id in enumerate(ids):
             plotHelper(map(lambda x: x[i], history), id)
+
 
 def getEigenVectorEigenValue(network, graph, iterations):
     matrix, uIdOrAIdToMatrix = network.calcAdjacencyMatrix(graph)
