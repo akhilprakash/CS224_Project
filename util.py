@@ -83,9 +83,12 @@ class ProgressBar(object):
         self.start = time.time()
         self._last_line_length = 0
         self.window_size = window_size
-        self.ticks = deque()
+        self.t = deque(maxlen=2)
+        self.v = deque(maxlen=window_size-1)
+        self.a = deque(maxlen=window_size-2)
 
     def __enter__(self):
+        self._last_tick = time.time()
         return self
 
     def _seconds_left(self, ratio):
@@ -93,12 +96,19 @@ class ProgressBar(object):
         elapsed = now - self.start
         return int(elapsed / ratio * (1. - ratio))
 
-
     def update(self, done):
-        # Update ticks
-        self.ticks.append(time.time())
-        if len(self.ticks) > self.window_size:
-            self.ticks.popleft()
+        # # Update ticks
+        # t = time.time()
+        # v = t - self.t[-1]
+        # a = v - self.v[-1]
+        #
+        # # Update moving averages
+        # if len(self.v) == self.window_size - 1:
+        #
+        #
+        # self.ticks.append(time.time())
+        # if len(self.ticks) > self.window_size:
+        #     self.ticks.popleft()
 
         # Erase
         sys.stdout.write('\r')
