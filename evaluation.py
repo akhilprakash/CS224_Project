@@ -1455,7 +1455,7 @@ class ItemDegreeHeterogeneity(Metric):
 
 class UserArticleGraphClustCoeff(Metric):
     def measure(self, experiment, network, iterations):
-       # Use at most N samples, where N is the number of users
+        # Use at most N samples, where N is the number of users
         N = len(network.users)
         return snap.GetClustCf(network.userArticleGraph, N)
 
