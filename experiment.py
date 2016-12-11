@@ -99,9 +99,7 @@ class Experiment(object):
                  nullRecommender='Random',
                  networkInitType='random',
                  pLikeMethod='empirical',
-                 friendGraphFile= 'CA-GrQc.txt', #'zacharys.csv', #
-                 numOnlinePerIteration=500,
-                 numRecsPerIteration=20,
+                 friendGraphFile='CA-GrQc.txt', #'zacharys.csv', #
                  numNewArticlesPerIteration=5,
                  numOnlinePerIteration=500,
                  numRecsPerIteration=20,
@@ -124,6 +122,7 @@ class Experiment(object):
         self.numRecsPerIteration = numRecsPerIteration
         self.numOnlinePerIteration = numOnlinePerIteration
         self.networkInitType = networkInitType
+        self.friendGraphFile = friendGraphFile
         self.network = Network(data_path(friendGraphFile), networkInitType)
         self.pLikeMethod = pLikeMethod
         self.pLike = getattr(PLike, pLikeMethod)
@@ -170,7 +169,7 @@ class Experiment(object):
         else:
             self.metrics = [
                 evaluation.Statistics(),
-                evaluation.HierClustering(),
+                # evaluation.HierClustering(),
                 evaluation.ItemDegreeHeterogeneity(),
                 evaluation.NumberOfSquares(),
                 #evaluation.UserUserGraphCutMinimization(),
@@ -182,12 +181,9 @@ class Experiment(object):
     def _parameters(self, delimiter):
         return delimiter.join([
             "%s Recommender" % self.recommender.__class__.__name__,
-            "%s Null Recommender" % self.nullRecommender.__class__.__name__,
             "%s Political Preference" % self.networkInitType.title(),
             "%s PLike" % self.pLikeMethod.title(),
-            "%d NumOnline" % self.numOnlinePerIteration,
-            "%d NumRecs" % self.numRecsPerIteration,
-            "%d Iterations" % self.numIterations,
+            "%s Friend Graph" % ('Karate Club' if self.friendGraphFile == 'zacharys.csv' else 'Collaboration'),
         ])
 
     @property
