@@ -19,12 +19,11 @@ import snap
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import laplacian
-<<<<<<< HEAD
+
 from scipy.spatial.distance import squareform
 import scipy.cluster.hierarchy
 import pdb
-=======
->>>>>>> 66e093bca4408c4d48e21ab3b120e7736ef41f13
+
 import util
 from util import print_error
 from collections import defaultdict
