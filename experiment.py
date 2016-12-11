@@ -102,8 +102,8 @@ class Experiment(object):
                  pLikeMethod='empirical',
 
                  friendGraphFile= 'CA-GrQc.txt', #'zacharys.csv', #
-                 numOnlinePerIteration=100,
-                 numRecsPerIteration=5,
+                 numOnlinePerIteration=500,
+                 numRecsPerIteration=20,
 
                  outputDir=os.path.join('out', '{params}'),
                  ):
