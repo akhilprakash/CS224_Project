@@ -94,6 +94,9 @@ class ProgressBar(object):
     def _seconds_left(self, ratio):
         # Update ticks
         d_ratio = ratio - self.last_ratio
+        if d_ratio == 0:
+            return 0
+
         t = time.time()
         v = (t - self.t[-1]) / d_ratio if self.t else 0
         a = (v - self.v[-1]) / d_ratio if self.v else 0
@@ -107,7 +110,9 @@ class ProgressBar(object):
         vavg = sum(self.v) / float(len(self.v))
         aavg = sum(self.a) / float(len(self.a))
 
-        return int(vavg + 0.5 * aavg)
+        ratio_left = 1.0 - ratio
+
+        return int(ratio_left * vavg + 0.5 * aavg * ratio_left * ratio_left)
 
         now = time.time()
         elapsed = now - self.start
