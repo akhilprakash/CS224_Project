@@ -23,6 +23,7 @@ import pdb
 import util
 from util import print_error
 from collections import defaultdict
+from collections import Counter
 
 try:
     import networkx as nx
@@ -332,9 +333,33 @@ class Statistics(Metric):
         # Variance in the readership; how much does distribution of pol.orient of users vary across each article
         # Variance in who read each article
 
+        plt.figure()
+        plt.hist(stds)
+        plt.xlabel("Standard Deviation")
+        plt.ylabel("Frequency")
+        plt.title("Historgram of Standard Deviation")
+        plt.savefig(experiment.out_path(self.safe_name + "histogram" + ".png"))
+        plt.close()
+
     def save(self, experiment, history):
         pass
         util.writeCSV(experiment.out_path("statistics"), history)
+
+class StackedBarChart(Metric):
+    def measure(self, experiment, network, iterations):
+        pass
+
+    def plot(self, experiment, network, history):
+        print "in stacked bar chart"
+        stackedBar = []
+        for aId in network.articles.keys():
+            for uId in network.userArticleGraph.GetNI(aId).GetOutEdges():
+                stackedBar.append([aId, network.getUser(uId).getPoliticalness(), network.getArticle(aId).getSource()])
+        util.writeCSV(experiment.out_path("stackedBar"), stackedBar)
+        print "finished stacked bar char"
+        for i,oneSim in enumerate(network.userPolticalnessSimulation):
+            freq = Counter(oneSim.values()).most_common()
+            util.writeCSV(experiment.out_path("userPOlticalDistribtuion" + str(i)), freq)
 
 
 class CliquePercolation(Metric):
@@ -347,31 +372,74 @@ class CliquePercolation(Metric):
         G, _ , _ = network.createUserUserGraph()
         print "finished creating user user graph"
         
-        cliques = nx.k_clique_communities(G, 5)
-        values = []
-        for c in cliques:
-            dictionary = collections.defaultdict(int)
-            for NI in c:
-                politicalness = 0
-                if NI in network.users:
-                    politicalness = network.users[NI].getPoliticalness()
-                dictionary[politicalness] = dictionary[politicalness] + 1
-            values.append(dictionary)
-        for i, h in enumerate(values):
-            val = []
-            for pol in range(-2, 3):
-                val.append(h[pol])
-            try:
-                print self.name
-                plt.figure()
-                plt.bar(range(-2, 3), val)
-                plt.xlabel("Politicalness")
-                plt.ylabel("Count")
-                plt.title("Count vs. Politicalness Community = " + str(i))
-                plt.savefig(experiment.out_path(self.safe_name  + "community=" + str(i) + '.png'))
-                plt.close()
-            except IOError:
-                print_error("Error making plot")
+        def cliquePerc(G, id):
+            cliques = nx.k_clique_communities(G, 5)
+            values = []
+            for c in cliques:
+                dictionary = collections.defaultdict(int)
+                for NI in c:
+                    politicalness = 0
+                    if NI in network.users:
+                        politicalness = network.users[NI].getPoliticalness()
+                    dictionary[politicalness] = dictionary[politicalness] + 1
+                values.append(dictionary)
+            for i, h in enumerate(values):
+                val = []
+                for pol in range(-2, 3):
+                    val.append(h[pol])
+                try:
+                    print self.name
+                    plt.figure()
+                    plt.bar(range(-2, 3), val)
+                    plt.xlabel("Politicalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Politicalness Community = " + str(i))
+                    plt.savefig(experiment.out_path(self.safe_name  + id + "community=" + str(i) + '.png'))
+                    plt.close()
+                except IOError:
+                    print_error("Error making plot")
+
+        cliquePerc(G, "userUser")
+        cliquePerc(network.networkxFriendGraph, "nxFriendGraph")
+
+class UserPoliticalnessStability(Metric):
+
+    def measure(self, experiment, network, iterations):
+        """Given a Network, return a metric of any type."""
+        pass
+
+    def plot(self, experiment, network, history):
+        """
+        Given a list of objects of the type returned by self.measure, make an
+        appropriate plot of this metric over time.
+        """
+        for i,user in enumerate(network.users):
+            poltical = []
+            for oneSim in network.userPolticalnessSimulation:
+                poltical.append(oneSim[user])
+            plt.figure()
+            plt.hist(poltical)
+            plt.xlabel("Polticalness")
+            plt.ylabel("Frequency")
+            plt.title("User polticalness user=" + str(user))
+            plt.savefig(experiment.out_path(self.safe_name + str(user) + ".png"))
+            plt.close()
+            if i > 50:
+                break
+
+        for i,oneSim in enumerate(network.userPolticalnessSimulation):
+            freq = Counter(oneSim.values()).most_common()
+            print freq
+            plt.figure()
+            plt.bar(map(lambda x: x[0], freq), map(lambda x: x[1], freq))
+            plt.xlabel("Polticalness")
+            plt.ylabel("Frequency")
+            plt.title("Intlaiziaiton of User Polticalness Simulation=" + str(i))
+            plt.savefig(experiment.out_path(self.safe_name + "Overall" + str(i) + ".png"))
+            plt.close()
+
+
+
 
 
 
@@ -672,9 +740,10 @@ class PathsBetweenPoliticalnesses(Metric):
 
 
 class Modularity2(Metric):
-    def measure(self, experiment, network, iterations):
+
+    def mod(self, graph, network):
         CmtyV = snap.TCnComV()
-        modularity = snap.CommunityGirvanNewman(network.userArticleGraph, CmtyV)
+        modularity = snap.CommunityGirvanNewman(graph, CmtyV)
         politicalnessByCommunity = {}
         for Cmty in CmtyV:
             for NI in Cmty:
@@ -682,7 +751,8 @@ class Modularity2(Metric):
                 if NI in network.users:
                     politicalness = network.users[NI].getPoliticalness()
                 elif NI in network.articles:
-                    politicalness = network.articles[NI].getPoliticalness()
+                    #politicalness = network.articles[NI].getPoliticalness()
+                    print "skip"
                 else:
                     raise Exception("Error in finding politicalness")
                 if Cmty in politicalnessByCommunity:
@@ -696,6 +766,10 @@ class Modularity2(Metric):
                     politicalnessByCommunity[Cmty][politicalness] = 1
 
         return [modularity, politicalnessByCommunity]
+
+
+    def measure(self, experiment, network, iterations):
+        return self.mod(network.userArticleGraph, network)
 
     def plot(self, experiment, network, history):
         print self.name
@@ -723,6 +797,24 @@ class Modularity2(Metric):
                     plt.close()
                 except IOError:
                     print_error("Error making plot")
+        result = self.mod(network.friendGraph, network)
+        print "modulairty of friend graph=" + str(result[0])
+        for cmty, innerDict in result[1].items():
+                values = []
+                for pol in range(-2, 3):
+                    values.append(innerDict[pol])
+                try:
+                    print self.name
+                    plt.figure()
+                    plt.bar(range(-2, 3), values)
+                    plt.xlabel("Politicalness")
+                    plt.ylabel("Count")
+                    plt.title("Count vs. Politicalness Community = " + str(cmty))
+                    plt.savefig(experiment.out_path(self.safe_name + "community = " + str(cmty) + "iterations=" + str(i) + '.png'))
+                    plt.close()
+                except IOError:
+                    print_error("Error making plot")
+
 
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("modularity2"), history)
@@ -838,7 +930,7 @@ class Betweenness(Metric):
                 values.append(dictionary)
             return [betweenessCentr, values]
 
-        return [betweeeness(network.userArticleGraph), betweeeness(network.userArticleFriendGraph), betweeeness(network.createUserUserGraph()[1])]
+        return [betweeeness(network.friendGraph), betweeeness(network.userArticleGraph), betweeeness(network.userArticleFriendGraph), betweeeness(network.createUserUserGraph()[1])]
 
     def plot(self, experiment, network, history):
 
@@ -870,7 +962,7 @@ class Betweenness(Metric):
                         plt.savefig(experiment.out_path(self.safe_name + "Community " + str(j) + " iterations=" + str(i) + id + '.png'))
                         plt.close()
 
-        ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
+        ids = ["friendGraph","userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
         for i, id in enumerate(ids):
             plotHelper(map(lambda x: x[i], history), id)
 

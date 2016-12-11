@@ -129,8 +129,14 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                evaluation.Statistics() #,
+                evaluation.Statistics(), #,
+                #evaluation.CliquePercolation(),
+                #evaluation.Modularity2(),
+                #evaluation.Betweenness(),
+                #evaluation.Modularity2()
+                #evaluation.UserPoliticalnessStability()
                 #evaluation.UserUserGraphCutMinimization(),
+                evaluation.StackedBarChart()
             ]
 
         self.histories = defaultdict(list)
