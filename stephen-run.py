@@ -43,15 +43,19 @@ exps = OrderedDict([
         recommender='Random',
         **constant_kwargs
     )),
+    ('Popular', Experiment(
+        recommender='Popular',
+        **constant_kwargs
+    )),
     ('Content-Based', Experiment(
         recommender='ContentBased',
         **constant_kwargs
     )),
-    ('Instagram w/ Random Default', Experiment(
+    ('Friend-Based w/ Random Default', Experiment(
         recommender='InstagramWithRandomDefault',
         **constant_kwargs
     )),
-    ('Instagram w/ Content-Based Default', Experiment(
+    ('Friend-Based w/ Content-Based Default', Experiment(
         recommender='InstagramWithContentBasedDefault',
         **constant_kwargs
     )),
@@ -84,7 +88,7 @@ for name, exp in exps.items():
 plt.title('Evolution of Number of Squares')
 plt.xlabel('iterations')
 plt.ylabel('number of squares')
-plt.legend(exps.keys(), loc='lower right')
+plt.legend(exps.keys(), loc='upper left')
 plt.savefig(os.path.join('out', 'propagation-nos.png'))
 
 # Plot std
@@ -94,6 +98,6 @@ for name, exp in exps.items():
 plt.title('Evolution of Readership Standard Deviation')
 plt.xlabel('iterations')
 plt.ylabel('average std of political orientations of an article\'s readers')
-plt.legend(exps.keys())
+plt.legend(exps.keys(), loc='lower right')
 plt.savefig(os.path.join('out', 'propagation-std.png'))
 
