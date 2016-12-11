@@ -168,7 +168,7 @@ class Experiment(object):
         else:
             self.metrics = [
                 evaluation.Statistics(),
-                evaluation.HierClustering(),
+                # evaluation.HierClustering(),
                 evaluation.ItemDegreeHeterogeneity(),
                 evaluation.NumberOfSquares(),
                 #evaluation.UserUserGraphCutMinimization(),

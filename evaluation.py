@@ -184,17 +184,17 @@ class Statistics(Metric):
                 POs_of_readers[article.articleId].append(userPO)
 
 
-        print "userID: number of articles liked"
+        # print "userID: number of articles liked"
         # print numLiked
 
-        print "articleID: number of users liked"
+        # print "articleID: number of users liked"
         # print timesLiked
 
-        print "articleID: POs of users that liked"
-        print POs_of_readers
+        # print "articleID: POs of users that liked"
+        # print POs_of_readers
 
-        print "source: number of times an article was liked from this source"
-        print likedFromSource
+        # print "source: number of times an article was liked from this source"
+        # print likedFromSource
 
         print self.name
         plt.figure()
