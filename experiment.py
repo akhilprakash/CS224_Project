@@ -32,7 +32,7 @@ class PLike(object):
         return PLike.TRUST[article.source][reader.politicalness]
 
     @staticmethod
-    def individual(reader, article):
+    def smoothed(reader, article):
         # Like probability is equal to a combination of the trust percentages from the data for that source
         # a*plikeofreader with diff politcalness
         PLike_for_source = PLike.TRUST[article.source]
@@ -53,11 +53,45 @@ class PLike(object):
         return (np.array(PLike_for_source.values()).dot(weighting))/np.sum(weighting)#PLike.TRUST[article.source][reader.politicalness]
 
 
+    @staticmethod
+    def individual(reader, article):
+        # Add variance back into means by getting the specific reader and article and sampling from a kernel with some
+        # variance as a function of the reader type around that probability
+        plike_data = PLike.TRUST[article.source][reader.politicalness]
+
+        # print str(1.0 - (0.5*(np.absolute(reader.politicalness)) + 0.01))
+        plike_indiv  = np.random.normal(plike_data, 1.0 - (0.5*(np.absolute(reader.politicalness))) + 0.01)
+
+        '''
+        print 'data'
+        print plike_data
+
+        print 'indiv'
+        print plike_indiv
+        '''
+
+        if plike_indiv > 1:
+            return 1
+        elif plike_indiv < 0:
+            return 0
+        else:
+            return plike_indiv
+
+
+        '''
+        print weighting
+        print 'actual'
+        print PLike_for_source[reader.politicalness]
+        print 'indiv'
+        print (np.array(PLike_for_source.values()).dot(weighting))/np.sum(weighting)
+        '''
+
 
 class Experiment(object):
 
     SOURCES = PLike.TRUST.keys()
     WEIGHTS_SOURCES = [1.0 / len(SOURCES)] * len(SOURCES)  # uniform weights
+    NUM_NEW_ARTICLES_PER_ITER = 5
 
     def __init__(self,
                  numIterations=100,
@@ -66,9 +100,11 @@ class Experiment(object):
                  nullRecommender='Random',
                  networkInitType='random',
                  pLikeMethod='empirical',
-                 friendGraphFile='CA-GrQc.txt',
+
+                 friendGraphFile= 'CA-GrQc.txt', #'zacharys.csv', #
                  numOnlinePerIteration=100,
                  numRecsPerIteration=5,
+
                  outputDir=os.path.join('out', '{params}'),
                  ):
         """
@@ -129,12 +165,10 @@ class Experiment(object):
             ]
         else:
             self.metrics = [
-                evaluation.Statistics(), #,
-                #evaluation.CliquePercolation(),
-                #evaluation.Modularity2(),
-                #evaluation.Betweenness(),
-                #evaluation.Modularity2()
-                #evaluation.UserPoliticalnessStability()
+                evaluation.Statistics(),
+                evaluation.HierClustering(),
+                evaluation.ItemDegreeHeterogeneity(),
+                evaluation.NumberOfSquares(),
                 #evaluation.UserUserGraphCutMinimization(),
                 evaluation.StackedBarChart()
             ]
@@ -198,7 +232,7 @@ class Experiment(object):
         readers = self.network.getNextReaders(self.numOnlinePerIteration)
 
         # Introduce new articles
-        new_articles = [self.introduceArticle(i) for _ in xrange(self.numRecsPerIteration)]
+        new_articles = [self.introduceArticle(i) for _ in xrange(self.NUM_NEW_ARTICLES_PER_ITER)]
 
         # print "%f%% ARTICLES LIKED, NUM READERS: %d" % (
         #     sum(self.network.userArticleGraph.GetNI(article.articleId).GetDeg() > 0 for article in self.network.getArticles()) /
@@ -208,7 +242,7 @@ class Experiment(object):
 
         # Compute recommendations and "show" them to users
         self.showRecommendations(self.nullRecommender, readers, self.numRecsPerIteration / 2)
-        self.showRecommendations(self.recommender, readers, self.numRecsPerIteration / 2)
+        self.showRecommendations(self.recommender, readers, self.numRecsPerIteration)
 
         # Analyze resulting graph at this iteration
         self.runAnalysis(i)

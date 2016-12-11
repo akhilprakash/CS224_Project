@@ -3,11 +3,12 @@ import pdb
 import random
 from sets import Set
 import snap
-from scipy.sparse import csc_matrix
-import evaluation
 import util
 from user import User
 import networkx as nx
+import numpy as np
+import heapq
+
 
 def getMax(NIdToDistH):
     nodeId = -1
@@ -26,6 +27,7 @@ class Network(object):
     # TODO: is this based on data?
     #http://www.gallup.com/poll/188096/democratic-republican-identification-near-historical-lows.aspx
     POLITICALNESS_DISTRIBUTION_FOR_USERS = [.1, .2, .4, .2, .1]
+    # POLITICALNESS_DISTRIBUTION_FOR_USERS = [.2, .3, .4, .3, .2]
 
     def largestNodeId(self, graph):
         maxNodeId = -1
@@ -59,8 +61,7 @@ class Network(object):
         else:
             raise Exception("initMethod must be propagation, random, or friends")
         print "done initializing"
-        
-        evaluation.getEigenVectorEigenValue(self, self.friendGraph, 0)
+       # evaluation.getEigenVectorEigenValue(self, self.friendGraph, 0)
 
     def spreadPoliticalness(self, nodeId, depth):
         political = self.users[nodeId].getPoliticalness()
@@ -291,35 +292,25 @@ class Network(object):
     def getBeta(self, userNodeId, slope=.5):
         return self.userArticleGraph.GetNI(userNodeId).GetOutDeg() * slope
 
-    def powerLawExponentialCutoff(self, userNodeId, x):
-        beta = self.getBeta(userNodeId)
-        return beta
-
-    # TODO: verify that this works and is efficient enough?
     def sampleFromPowerLawExponentialCutoff(self, userNodeId):
         # Rejection sampling
         # g is uniform 0,1
-        M = self.powerLawExponentialCutoff(userNodeId, self.X_MIN)
+        M = self.getBeta(userNodeId)
         if M == 0:
             # when have no edges
             return 10 * random.random()
+        c = 0
         while True:
             x = random.random()
-            r = self.powerLawExponentialCutoff(userNodeId, x) / M
+            r = self.getBeta(userNodeId) / M
             u = random.random()
             if u <= r:
                 return x
+            c += 1
 
     def getNextReaders(self, N):
-        result = []
-        for user in self.users.itervalues():
-            result.append((user, self.sampleFromPowerLawExponentialCutoff(user.getUserId())))
-        # Want smallest values
-        sortedResults = sorted(result, key=lambda x: x[1])
-        readers = []
-        for i in range(0, min(N, len(sortedResults))):
-            readers.append(sortedResults[i][0])
-        return readers
+        return heapq.nlargest(min(N, len(self.users)), self.users.itervalues(),
+                              key=lambda u: self.sampleFromPowerLawExponentialCutoff(u.getUserId()))
 
     def getUser(self, userId):
         return self.users[userId]
@@ -390,23 +381,25 @@ class Network(object):
         Weights are defined by the number of common articles liked.
         The more that two people have read, the more common basis of
         understanding they have.
+
+        Returns (matrix, idx2user) where M is the computed dense matrix and
+        idx2user is a dict mapping the row/column indices in the matrix to
+        the corresponding User objects.
         """
-        weights = util.PairsDict()
+        # Materialize a list of the users
+        users = self.users.values()
+
+        # Compute mappings from index to user and vice versa
+        idx2user = dict(enumerate(users))
+        user2idx = {user.userId: i for i, user in idx2user.iteritems()}
+
+        # Accumulate edge weights
+        M = np.zeros((len(users), len(users)))
         for articleId in self.articles:
             for userA, userB in itertools.combinations(self.getLikers(articleId), 2):
-                if (userA, userB) not in weights:
-                    weights[userA, userB] = 1
-                else:
-                    weights[userA, userB] += 1
-        i = []
-        j = []
-        weightsList = []
-        for (userA, userB), num_common in weights.iteritems():
-            i.append(userA)
-            j.append(userB)
-            weightsList.append(num_common)
-            i.append(userB)
-            j.append(userA)
-            weightsList.append(num_common)
+                i = user2idx[userA]
+                j = user2idx[userB]
+                M[i, j] += 1
+                M[j, i] += 1
 
-        return csc_matrix((weightsList, (i, j)))
+        return M, idx2user
