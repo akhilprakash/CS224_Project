@@ -19,9 +19,12 @@ import snap
 import numpy as np
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import laplacian
+<<<<<<< HEAD
 from scipy.spatial.distance import squareform
 import scipy.cluster.hierarchy
 import pdb
+=======
+>>>>>>> 66e093bca4408c4d48e21ab3b120e7736ef41f13
 import util
 from util import print_error
 from collections import defaultdict
@@ -119,8 +122,8 @@ class Statistics(Metric):
 
         avg_std = np.mean(std_overTwo.values())
         # sum_var = np.sum(vars_overTwo.values())
-        print 'AVG STD IN POs'
-        print avg_std
+        # print 'AVG STD IN POs'
+        # print avg_std
 
         '''
         IDs, stds = zip(*sorted(zip(reader_PO_std.keys(), reader_PO_std.values()), key=lambda x: x[1]))
@@ -884,31 +887,6 @@ class Modularity(Metric):
         util.writeCSV(experiment.out_path("modularity"), history)
 
 
-# class ModularityWRTFriends(Metric):
-#     def measure(self, experiment, network, iterations):
-#         result = []
-#         for idx, i in enumerate(range(-2, 3)):
-#             ids = network.getUserIdsWithSpecificPoliticalness(i)
-#             Nodes = snap.TIntV()
-#             for ni in ids:
-#                 Nodes.Add(ni)
-#             result.append(snap.GetModularity(network.userArticleFriendGraph, Nodes))
-
-#         return result
-
-#     def plot(self, experiment, network, history):
-#         for idx, i in enumerate(range(-2, 3)):
-#             print self.name
-#             plt.figure()
-#             oneCluster = map(lambda x:x[idx], history)
-#             plt.plot(oneCluster)
-#             plt.savefig(experiment.out_path(self.safe_name + 'politicalness' + str(i) + '.png', "Modularity"))
-#             plt.close()
-
-#     def save(self, experiment, history):
-#         util.writeCSV(experiment.out_path("modularity"), history)
-
-
 def copyGraph(graph):
     copyGraph = snap.TUNGraph.New()
     for node in graph.Nodes():
@@ -1179,7 +1157,6 @@ class OverallClustering(Metric):
         Given a list of objects of the type returned by self.measure, make an
         appropriate plot of this metric over time.
         """
-        print self.name
         ids = ["userArticleGraph", "userArticleFriendGraph", "userUserGraph"]
 
         def plotHelper(history, id):
@@ -1199,11 +1176,6 @@ class OverallClustering(Metric):
         Save history to a file.
         """
         util.writeCSV(experiment.out_path("OverallClustering" + self.name), history)
-
-# class OverallClusteringWRTFriends(OverallClustering):
-#     def measure(self, experiment, network, iterations):
-#         #printGraph(network.userArticleGraph)
-#         return snap.GetClustCf(network.userArticleFriendGraph, -1)    
 
 
 class DeadArticles(Metric):
@@ -1507,13 +1479,11 @@ class CommonArticles(Metric):
         plt.savefig(experiment.out_path(self.safe_name + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2) + ".png"))
         plt.close()
 
-
     def save(self, experiment, history):
         util.writeCSV(experiment.out_path("CommonArticles_" + "politicalness=" + str(self.politicalness1) + " and " + str(self.politicalness2)), history)
 
 
 class VisualizeGraph(Metric):
-
     def measure(self, experiment, network, iterations):
         eigenvector, dictionary, matrix = getEigenVectorEigenValue(network)
         
@@ -1590,4 +1560,42 @@ class UserUserGraphCutMinimization(Metric):
         print 'Cluster B:', countsB
 
 
+class ItemDegreeHeterogeneity(Metric):
+    def measure(self, experiment, network, iterations):
+        sum_of_square_degrees = 0
+        sum_of_degrees = 0
+        for article in network.articles:
+            deg = network.userArticleGraph.GetNI(article).GetDeg()
+            sum_of_square_degrees += (deg * deg)
+            sum_of_degrees += deg
+        return sum_of_square_degrees / sum_of_degrees
 
+    def plot(self, experiment, network, history):
+        plt.figure()
+        plt.plot(history)
+        plt.xlabel('iterations')
+        plt.ylabel('item degree heterogeneity')
+        plt.title('Evolution of Item Degree Heterogeneity\n' + experiment.parameters, fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name))
+
+
+class NumberOfSquares(Metric):
+    # Number of largest eigenvalues to use to estimate number of squares
+    # The more the more accurate, but slower
+    NUM_EIGENVALUES = 100
+
+    def measure(self, experiment, network, iterations):
+        # Use at most N samples, where N is the number of users
+        PEigV = snap.TFltV()
+        with util.stdout_redirected():
+            snap.GetEigVals(network.userArticleGraph, self.NUM_EIGENVALUES, PEigV)
+        eigenvalues = np.array(list(PEigV))
+        return np.sum(np.power(eigenvalues, 4)) / 12
+
+    def plot(self, experiment, network, history):
+        plt.figure()
+        plt.plot(history)
+        plt.xlabel('iterations')
+        plt.ylabel('number of squares')
+        plt.title('Evolution of NoS\n' + experiment.parameters, fontsize=7)
+        plt.savefig(experiment.out_path(self.safe_name))
