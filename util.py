@@ -185,8 +185,8 @@ def stdout_redirected(to=os.devnull):
         os.dup2(to.fileno(), stdoutfd) # fd writes to 'to' file
 
     with os.fdopen(os.dup(stdoutfd), 'wb') as old_stdout:
-        with open(to, 'wb') as file:
-            _redirect_stdout(to=file)
+        with open(to, 'wb') as tofile:
+            _redirect_stdout(to=tofile)
         try:
             yield # allow code to be run with the redirected stdout
         finally:
