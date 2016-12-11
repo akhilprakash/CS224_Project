@@ -7,7 +7,8 @@ parse<-function(graph)
   return (graph)
 }
 
-setwd("C:/Users/Akhil Prakash/Desktop/Stanford/CS 224w/CS224_Project/out/InstagramWithRandomDefaultRecommender.RandomNullRecommender.FriendsPoliticalPreference.EmpiricalPLike.500NumOnline.20NumRecs.100Iterations")
+setwd("C:/Users/Akhil Prakash/Desktop/Stanford/CS 224w/CS224_Project/final out directory/InstagramWithContentBasedDefaultRecommender.RandomPoliticalPreference.IndividualPLike.CollaborationFriendGraph")
+  #"C:/Users/Akhil Prakash/Desktop/Stanford/CS 224w/CS224_Project/out/InstagramWithRandomDefaultRecommender.RandomNullRecommender.FriendsPoliticalPreference.EmpiricalPLike.500NumOnline.20NumRecs.100Iterations")
   #"C:/Users/Akhil Prakash/Desktop/Stanford/CS 224w/CS224_Project/out/CollaborativeFilteringRecommender.RandomNullRecommender.PropagationPoliticalPreference.EmpiricalPLike.500NumOnline.20NumRecs.32Iterations")
 #"C:/Users/Akhil Prakash/Desktop/Stanford/CS 224w/CS224_Project/out/CollaborativeFilteringRecommender.RandomNullRecommender.PropagationPoliticalPreference.EmpiricalPLike.500NumOnline.20NumRecs.32Iterations"
 # has analysis done for this "C:/Users/Akhil Prakash/Desktop/Stanford/CS 224w/CS224_Project/out/CollaborativeFilteringRecommender.RandomNullRecommender.PropagationPoliticalPreference.EmpiricalPLike.500NumOnline.20NumRecs.32Iterations"
@@ -23,15 +24,27 @@ stackedBar <- within(stackedBar,
                                       levels=names(sort(table(articleId), 
                                                         decreasing=TRUE))))
 
-ggplot(data = stackedBar) + geom_bar(aes(x = articleId, fill = type), position = "fill")
-ggplot(data = stackedBar) + geom_bar(aes(x = articleId, fill = type))
+stackedBar$type = factor(stackedBar$type, levels = 2:-2)
+
+ggplot(data = stackedBar) + geom_bar(aes(x = articleId, fill = type), position = "fill") + xlab("Article Id") + ylab("Proportion") + ggtitle("Proportion of User Polticalness for each Article") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+ggplot(data = stackedBar) + geom_bar(aes(x = articleId, fill = type)) + xlab("Article Id") + ylab("Frequency") + ggtitle("User Polticalness who Like each Article") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
 first50 = names(sort(table(stackedBar$articleId), decreasing=TRUE))[1:30]
 
 stackedBarSubset = subset(stackedBar, articleId %in% first50)
 
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type), position = "fill")
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type))
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type), position = "fill") +
+  xlab("Article Id") + ylab("Proportion") + ggtitle("Proportion of User Polticalness for each Article") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type)) +
+  xlab("Article Id") + ylab("Frequency") + ggtitle("User Polticalness who Like each Article") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
 #test if these poropations match up witht he proapotions of users then knwo basically eveyrone reaidng anything
 
@@ -59,8 +72,10 @@ barplot(table(stackedBarSubset$Source)/length(stackedBarSubset$Source), main = "
 ggplot(data = stackedBar) + geom_bar(aes(x = Source))
 ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source))
 
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type), position = "fill")
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type))
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type), position = "fill") +
+  ylab("Proportion") + ggtitle("User Polticalness based on Source")
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type)) +
+  ylab("Frequency") + ggtitle("User Polticalness based on Source")
 
 #Fox News, Glen Beck, and Hannity are causing the large about of -2 likes in the top 30
 
@@ -77,12 +92,12 @@ for (i in 2:length(location$y))
 print(SUM)
 
 #most of the highly liked articles have roughly the same spread. 
-N =  1354+ 1225+ 1062+ 965+ 636
-pneg1 = 1354/N
-pneg2 = 965/N
-pzero = 1225/N
-ppos1 = 1062/N
-ppos2 = 636/N
+N =  1534+ 1198+ 1116+ 897+ 497
+pneg1 = 1534/N
+pneg2 = 1116/N
+pzero = 1198/N
+ppos1 = 897/N
+ppos2 = 497/N
 
 #clacualte stdev for each article
 articleIdStdevMat = matrix(0, nrow = length(unique(stackedBar$articleId)), ncol = 3)
@@ -108,8 +123,15 @@ plot(top30VarianceArticle[,3], top30VarianceArticle[,2], xlab = "Number of LIkes
 
 stackedBarSubset = subset(stackedBar, articleId %in% top30VarianceArticleIds)
 
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type), position = "fill")
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type))
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type), position = "fill") +
+  xlab("Article Id") + ylab("Proportion") + ggtitle("Proportion of User Polticalness for each Article") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+  
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = articleId, fill = type)) +
+  xlab("Article Id") + ylab("Frequency") + ggtitle("User Polticalness Likes for each Article") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
 
 #With instagram get a lot more 2 and -2 and less 0 so wil have more viariance so less polarization
 
@@ -138,8 +160,11 @@ barplot(table(stackedBarSubset$Source)/length(stackedBarSubset$Source))
 barplot(table(stackedBar$Source[stackedBar$Source %in% stackedBarSubset$Source])/length(stackedBar$Source))
 
 #These plots ignore sample size
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type), position = "fill")
-ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type))
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type), position = "fill") +
+  xlab("Source") + ylab("Proportion") + ggtitle("Proportion of User Polticalness for each Article")
+  
+ggplot(data = stackedBarSubset) + geom_bar(aes(x = Source, fill = type)) +
+  xlab("Source") + ylab("Frequency") + ggtitle("User Polticalness Likes for each Article")
 
 #IF we ingore smaple size
 
