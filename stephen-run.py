@@ -1,4 +1,5 @@
 import os
+from collections import OrderedDict
 
 import matplotlib
 matplotlib.use('Agg')
@@ -37,28 +38,28 @@ constant_kwargs = {
 }
 
 # Initialize experiments
-exps = {
-    'Random': Experiment(
+exps = OrderedDict([
+    ('Random', Experiment(
         recommender='Random',
         **constant_kwargs
-    ),
-    'Content-Based': Experiment(
+    )),
+    ('Content-Based', Experiment(
         recommender='ContentBased',
         **constant_kwargs
-    ),
-    'Instagram w/ Random Default': Experiment(
+    )),
+    ('Instagram w/ Random Default', Experiment(
         recommender='InstagramWithRandomDefault',
         **constant_kwargs
-    ),
-    'Instagram w/ Content-Based Default': Experiment(
+    )),
+    ('Instagram w/ Content-Based Default', Experiment(
         recommender='InstagramWithContentBasedDefault',
         **constant_kwargs
-    ),
-    'Collaborative Filtering': Experiment(
+    )),
+    ('Collaborative Filtering', Experiment(
         recommender='CollaborativeFiltering',
         **constant_kwargs
-    )
-}
+    )),
+])
 
 # Run experiments and save usual results
 for name, exp in exps.items():

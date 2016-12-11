@@ -77,7 +77,7 @@ def pairwise(iterable):
 
 
 class ProgressBar(object):
-    def __init__(self, total=None, width=40, window_size=10):
+    def __init__(self, total, width=40, window_size=100):
         self.total = total
         self.width = width
         self.start = time.time()
@@ -86,29 +86,34 @@ class ProgressBar(object):
         self.t = deque(maxlen=2)
         self.v = deque(maxlen=window_size-1)
         self.a = deque(maxlen=window_size-2)
+        self.last_ratio = 0
 
     def __enter__(self):
-        self._last_tick = time.time()
         return self
 
     def _seconds_left(self, ratio):
+        # Update ticks
+        d_ratio = ratio - self.last_ratio
+        t = time.time()
+        v = (t - self.t[-1]) / d_ratio if self.t else 0
+        a = (v - self.v[-1]) / d_ratio if self.v else 0
+        self.t.append(t)
+        self.v.append(v)
+        self.a.append(a)
+        self.last_ratio = ratio
+
+        # TODO: Use running update instead of iterating
+        # Update moving averages
+        vavg = sum(self.v) / float(len(self.v))
+        aavg = sum(self.a) / float(len(self.a))
+
+        return int(vavg + 0.5 * aavg)
+
         now = time.time()
         elapsed = now - self.start
         return int(elapsed / ratio * (1. - ratio))
 
     def update(self, done):
-        # # Update ticks
-        # t = time.time()
-        # v = t - self.t[-1]
-        # a = v - self.v[-1]
-        #
-        # # Update moving averages
-        # if len(self.v) == self.window_size - 1:
-        #
-        #
-        # self.ticks.append(time.time())
-        # if len(self.ticks) > self.window_size:
-        #     self.ticks.popleft()
 
         # Erase
         sys.stdout.write('\r')
@@ -116,10 +121,7 @@ class ProgressBar(object):
         sys.stdout.write('\r')
 
         # Draw bar
-        if self.total != 0:
-            ratio = done / self.total
-        else:
-            ratio = 1
+        ratio = done / self.total
         bars = int(ratio * self.width)
         line = u''.join([
             u'\u2593' * bars,
