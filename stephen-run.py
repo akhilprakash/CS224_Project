@@ -5,6 +5,7 @@ import numpy as np
 
 import evaluation
 from experiment import Experiment
+from util import ensure_path_exists
 
 
 # Create metrics
@@ -16,6 +17,7 @@ metrics = [
     idh,
     nos,
     std,
+    evaluation.StackedBarChart()
 ]
 
 # Shared parameters across experiments
@@ -58,6 +60,9 @@ for name, exp in exps.items():
     exp.run()
     exp.saveResults()
 
+# TODO: CHANGE THIS
+combined_plots_dir = ensure_path_exists(os.path.join('out', 'propagationinit.empiricalplike'))
+
 # Plot IDH
 plt.figure()
 for name, exp in exps.items():
@@ -66,7 +71,7 @@ plt.title('Evolution of Item Degree Heterogeneity')
 plt.xlabel('iterations')
 plt.ylabel('item degree heterogeneity')
 plt.legend(exps.keys())
-plt.savefig(os.path.join('out', '', 'all-idhs.png'))
+plt.savefig(os.path.join('out', 'propagation-idh.png'))
 
 # Plot NoS
 plt.figure()
@@ -76,15 +81,15 @@ plt.title('Evolution of Number of Squares')
 plt.xlabel('iterations')
 plt.ylabel('number of squares')
 plt.legend(exps.keys())
-plt.savefig(os.path.join('out', 'all-nos.png'))
+plt.savefig(os.path.join('out', 'propagation-nos.png'))
 
 # Plot std
 plt.figure()
 for name, exp in exps.items():
     plt.plot(exp.histories[std])
-plt.title('Evolution of Readership Variance')
+plt.title('Evolution of Readership Standard Deviation')
 plt.xlabel('iterations')
 plt.ylabel('average std of political orientations of an article\'s readers')
 plt.legend(exps.keys())
-plt.savefig(os.path.join('out', 'all-std.png'))
+plt.savefig(os.path.join('out', 'propagation-std.png'))
 
