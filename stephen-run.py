@@ -79,7 +79,7 @@ plt.title('Evolution of Item Degree Heterogeneity')
 plt.xlabel('iterations')
 plt.ylabel('item degree heterogeneity')
 plt.legend(exps.keys(), loc='lower right')
-plt.savefig(os.path.join('out', 'propagation-idh.png'))
+plt.savefig(os.path.join(combined_plots_dir, 'idh.png'))
 
 # Plot NoS
 plt.figure()
@@ -89,7 +89,7 @@ plt.title('Evolution of Number of Squares')
 plt.xlabel('iterations')
 plt.ylabel('number of squares')
 plt.legend(exps.keys(), loc='upper left')
-plt.savefig(os.path.join('out', 'propagation-nos.png'))
+plt.savefig(os.path.join(combined_plots_dir, 'nos.png'))
 
 # Plot std
 plt.figure()
@@ -99,5 +99,5 @@ plt.title('Evolution of Readership Standard Deviation')
 plt.xlabel('iterations')
 plt.ylabel('average std of political orientations of an article\'s readers')
 plt.legend(exps.keys(), loc='lower right')
-plt.savefig(os.path.join('out', 'propagation-std.png'))
+plt.savefig(os.path.join(combined_plots_dir, 'std.png'))
 
