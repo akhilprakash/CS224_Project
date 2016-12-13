@@ -105,6 +105,7 @@ class Experiment(object):
                  numRecsPerIteration=20,
                  outputDir=os.path.join('out', '{params}'),
                  metrics=None,
+                 allowWarnings=False,
                  ):
         """
         Constructor for Experiment.
@@ -115,6 +116,8 @@ class Experiment(object):
         :param pLikeMethod: method name of the PLike version to use: 'uniform'|'empirical'
         :param friendGraphFile: filename of the friend graph CSV file to use
         """
+        if not allowWarnings:
+            warnings.filterwarnings('ignore')
         self.start_time = datetime.datetime.now()
         self.numIterations = numIterations
         self.numNewArticlesPerIteration = numNewArticlesPerIteration
